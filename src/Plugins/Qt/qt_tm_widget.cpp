@@ -257,13 +257,13 @@ qt_tm_widget_rep::qt_tm_widget_rep(int mask, command _quit)
 
 #else
   mw->addToolBar (mainToolBar);
-  mw->addToolBarBreak ();
-  mw->addToolBar (modeToolBar);
-  mw->addToolBarBreak ();
+  // mw->addToolBarBreak ();
+  mw->addToolBar (Qt::LeftToolBarArea, modeToolBar);
+  // mw->addToolBarBreak ();
   mw->addToolBar (focusToolBar);
-  mw->addToolBarBreak ();
+  // mw->addToolBarBreak ();
   mw->addToolBar (userToolBar);
-  mw->addToolBarBreak ();
+  // mw->addToolBarBreak ();
 #endif
 
   sideTools->setAllowedAreas (Qt::AllDockWidgetAreas);
