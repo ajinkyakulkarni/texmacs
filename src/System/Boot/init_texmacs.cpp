@@ -17,8 +17,9 @@
 #include "merge_sort.hpp"
 #include "drd_std.hpp"
 #include "language.hpp"
-#ifndef __MINGW32__
 #include <unistd.h>
+#ifdef __MINGW32__
+#include <time.h>
 #endif
 
 tree texmacs_settings = tuple ();
@@ -114,18 +115,20 @@ make_dir (url which) {
 static url
 url_temp_dir_sub () {
 #ifdef __MINGW32__
-  static string pid= "1";
-  return url (main_tmp_dir) * url (pid);
+  static url tmp_dir= url_system(main_tmp_dir) * url_system(as_string(time(NULL)));
 #else
-  static string pid= as_string ((int) getpid ());
-  return url (main_tmp_dir) * url (pid);
+  static url tmp_dir= url_system(main_tmp_dir) * url_system(as_string ((int) getpid ()));
 #endif
+  return (tmp_dir);
 }
 
 url
 url_temp_dir () {
-  url u= url_temp_dir_sub ();
-  make_dir (u);
+  static url u;
+  if (u == url_none()) {
+    u= url_temp_dir_sub ();
+    make_dir (u);
+  }
   return u;
 }
 
@@ -138,14 +141,27 @@ process_running (int pid) {
 
 static void
 clean_temp_dirs () {
-#ifndef __MINGW32__
   bool err= false;
   array<string> a= read_directory (main_tmp_dir, err);
+#ifndef __MINGW32__
   for (int i=0; i<N(a); i++)
     if (is_int (a[i]))
       if (!process_running (as_int (a[i])))
         if (a[i] != as_string ((int) getpid ()))
-          rmdir (url (main_tmp_dir) * url (a[i]));
+          system ("rm -rf", url (main_tmp_dir) * url (a[i]));
+#else
+  /* delete the directories after 7 days */
+  time_t ts = as_int (basename (url_temp_dir_sub ())) - (3600 * 24 * 7 );
+  for (int i=0; i<N(a); i++)     
+    if (is_int (a[i])) {
+      time_t td= as_int (a[i]);
+      if (td < ts) {
+        url cur = url (main_tmp_dir) * url (a[i]);
+        array<string> f= read_directory (cur, err);
+        for (int j=0; j<N(f); j++) remove (cur * url (f[j]));
+        _rmdir (as_charp (as_string (cur)));
+      }
+    }
 #endif
 }
 
@@ -279,14 +295,14 @@ init_env_vars () {
   url all_root= style_root | package_root;
   url style_path=
     get_env_path ("TEXMACS_STYLE_PATH",
-		  expand (complete (all_root * url_wildcard (), "dr")));
+                  search_sub_dirs (all_root));
   url text_root=
     get_env_path ("TEXMACS_TEXT_ROOT",
 		  "$TEXMACS_HOME_PATH/texts:$TEXMACS_PATH/texts" |
 		  plugin_path ("texts"));
   url text_path=
     get_env_path ("TEXMACS_TEXT_PATH",
-		  expand (complete (text_root * url_wildcard (), "dr")));
+                  search_sub_dirs (text_root));
 
   // Get other data paths
   (void) get_env_path ("TEXMACS_FILE_PATH",text_path | style_path);
@@ -450,14 +466,23 @@ setup_texmacs () {
 
 void
 init_texmacs () {
+  //cout << "Initialize -- Succession status table\n";
   init_succession_status_table ();
+  //cout << "Initialize -- Succession standard DRD\n";
   init_std_drd ();
+  //cout << "Initialize -- Main paths\n";
   init_main_paths ();
+  //cout << "Initialize -- User dirs\n";
   init_user_dirs ();
+  //cout << "Initialize -- User preferences\n";
   load_user_preferences ();
+  //cout << "Initialize -- Guile\n";
   init_guile ();
+  //cout << "Initialize -- Environment variables\n";
   init_env_vars ();
+  //cout << "Initialize -- Miscellaneous\n";
   init_misc ();
+  //cout << "Initialize -- Deprecated\n";
   init_deprecated ();
 }
 

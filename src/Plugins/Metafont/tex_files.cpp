@@ -207,15 +207,9 @@ get_kpsepath (string s) {
     while ((end>start) && (r[end-1]=='/')) end--;
     string dir= r (start, end);
     if (dir == ".") continue;
-    p= expand (complete (dir * url_wildcard (), "dr")) | p;
+    p= search_sub_dirs (dir) | p;
   }
   return p;
-}
-
-static url
-search_sub_dirs (url root) {
-  url dirs= complete (root * url_wildcard (), "dr");
-  return expand (dirs);
 }
 
 void
@@ -227,7 +221,7 @@ reset_tfm_path (bool rehash) { (void) rehash;
     search_sub_dirs ("$TEXMACS_HOME_PATH/fonts/tfm") |
     search_sub_dirs ("$TEXMACS_PATH/fonts/tfm") |
     "$TEX_TFM_PATH" |
-    (tfm == ""? url_none (): tfm);
+    ((tfm == "" || tfm == "{}") ? url_none () : tfm);
   if ((get_setting ("MAKETFM") != "false") ||
       (get_setting ("TEXHASH") == "true"))
     if (get_setting ("KPSEWHICH") != "true")
