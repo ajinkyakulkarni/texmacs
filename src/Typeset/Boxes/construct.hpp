@@ -87,6 +87,7 @@ box text_box (path ip, int pos, string s, font fn, pencil pen);
 box delimiter_box (path ip, string s, font fn, pencil pen, SI y1, SI y2);
 box big_operator_box (path ip, string s, font fn, pencil pen, int n);
 box wide_box (path ip, string s, font fn, pencil pen, SI width);
+box wide_stix_box (path ip, string s, font fn, pencil pen, SI width);
 box bracket_box (path ip, int br_type, pencil pen, SI y1, SI y2);
 box wide_hat_box (path ip, SI x1, SI x2, pencil pen);
 box wide_tilda_box (path ip, SI x1, SI x2, pencil pen);
@@ -153,7 +154,7 @@ box page_box (path ip, tree page, int page_nr, SI w, SI h,
 	      array<box> decs, array<SI> decs_x, array<SI> decs_y);
 box locus_box (path ip, box b, list<string> ids, SI pixel);
 box locus_box (path ip, box b, list<string> ids, SI pixel, string ref, string anchor);
-box macro_box (path ip, box b, font big_fn= font ());
+box macro_box (path ip, box b, font big_fn= font (), int btype= STD_BOX);
 box tag_box (path ip, path tip, box b, tree keys);
 box note_box (path ip, box b, box note, SI nx, SI ny);
 

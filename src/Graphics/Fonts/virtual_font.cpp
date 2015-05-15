@@ -46,6 +46,10 @@ struct virtual_font_rep: font_rep {
   void get_extents (string s, metric& ex);
   void draw_fixed (renderer ren, string s, SI x, SI y);
   font magnify (double zoom);
+
+  double get_left_slope (string s);
+  double get_right_slope (string s);
+  SI get_right_correction (string s);
 };
 
 virtual_font_rep::virtual_font_rep (
@@ -134,6 +138,15 @@ virtual_font_rep::compile_bis (scheme_tree t, metric& ex) {
     return join (gl1, move (gl2, dx, 0));
   }
 
+  if (is_tuple (t, "vglue", 2)) {
+    metric ey;
+    glyph gl1= compile (t[1], ex);
+    glyph gl2= compile (t[2], ey);
+    SI dy= ex->y2 - ey->y1;
+    outer_fit (ex, ey, 0, dy);
+    return join (gl1, move (gl2, 0, dy));
+  }
+
   if (is_tuple (t, "add", 2)) {
     metric ey;
     glyph gl1= compile (t[1], ex);
@@ -211,7 +224,7 @@ virtual_font_rep::compile_bis (scheme_tree t, metric& ex) {
 
   if (is_tuple (t, "ver-extend", 3) || is_tuple (t, "ver-extend", 4)) {
     glyph gl= compile (t[1], ex);
-    int pos= (int) (as_double (t[2]) * gl->height);
+    int pos= (int) ((1.0 - as_double (t[2])) * gl->height);
     SI  add= (SI)  (as_double (t[3]) * unit);
     if (is_tuple (t, "ver-extend", 4))
       add= (SI)  (as_double (t[3]) * as_double (t[4]) * unit);
@@ -222,6 +235,25 @@ virtual_font_rep::compile_bis (scheme_tree t, metric& ex) {
     ex->y3 -= by * PIXEL;
     return ver_extend (gl, pos, by);
   }
+
+  if (is_tuple (t, "ver-take", 3) || is_tuple (t, "ver-take", 4)) {
+    glyph gl= compile (t[1], ex);
+    int pos= (int) ((1.0 - as_double (t[2])) * gl->height);
+    SI  add= (SI)  (as_double (t[3]) * (ex->y2 - ex->y1));
+    if (is_tuple (t, "ver-take", 4))
+      add= (SI) (as_double (t[3]) * as_double (t[4]) * (ex->y2 - ex->y1));
+    int nr = add / PIXEL;
+    if (pos < 0) pos= 0;
+    if (pos >= gl->height) pos= gl->height-1;
+    ex->y1= -add;
+    ex->y2= 0;
+    ex->y3= -nr * PIXEL;
+    ex->y4= 0;
+    return ver_take (gl, pos, nr);
+  }
+
+  if (is_tuple (t, "italic", 3))
+    return compile (t[1], ex);
 
   failed_error << "TeXmacs] The defining tree is " << t << "\n";
   FAILED ("invalid virtual character");
@@ -285,6 +317,16 @@ virtual_font_rep::draw (renderer ren, scheme_tree t, SI x, SI y) {
     SI dx= ex->x2;
     draw (ren, t[1], x, y);
     draw (ren, t[2], x + dx, y);
+    return;
+  }
+
+  if (is_tuple (t, "vglue", 2)) {
+    metric ex, ey;
+    get_metric (t[1], ex);
+    get_metric (t[2], ey);
+    SI dy= ex->y2 - ey->y1;
+    draw (ren, t[1], x, y);
+    draw (ren, t[2], x, y + dy);
     return;
   }
 
@@ -382,7 +424,7 @@ virtual_font_rep::draw (renderer ren, scheme_tree t, SI x, SI y) {
   if (is_tuple (t, "ver-extend", 3) || is_tuple (t, "ver-extend", 4)) {
     metric ex;
     get_metric (t[1], ex);
-    SI pos= (SI) (as_double (t[2]) * (ex->y2 - ex->y1));
+    SI pos= (SI) ((1.0 - as_double (t[2])) * (ex->y2 - ex->y1));
     SI add= (SI) (as_double (t[3]) * unit);
     if (is_tuple (t, "ver-extend", 4))
       add= (SI) (as_double (t[3]) * as_double (t[4]) * unit);
@@ -397,6 +439,30 @@ virtual_font_rep::draw (renderer ren, scheme_tree t, SI x, SI y) {
     }
     draw_clipped (ren, t[1], x, y - add, ex->x3, ex->y3, ex->x4, ex->y3 + pos);
     draw_clipped (ren, t[1], x, y, ex->x3, ex->y3 + pos, ex->x4, ex->y4);
+    return;
+  }
+
+  if (is_tuple (t, "ver-take", 3) || is_tuple (t, "ver-take", 4)) {
+    metric ex;
+    get_metric (t[1], ex);
+    SI pos= (SI) ((1.0 - as_double (t[2])) * (ex->y2 - ex->y1));
+    SI add= (SI) (as_double (t[3]) * (ex->y2 - ex->y1));
+    if (is_tuple (t, "ver-take", 4))
+      add= (SI) (as_double (t[3]) * as_double (t[4]) * (ex->y2 - ex->y1));
+    if (add > 0 && ex->y2 > ex->y1) {
+      SI  h = ex->y2 - ex->y1;
+      int n = (int) ((20 * add + h - 1) / h);
+      SI  dy= (add + n - 1) / n;
+      SI  hy= (add + 2*n - 1) / (2*n);
+      for (int i=0; i<n; i++)
+        draw_clipped (ren, t[1], x, y + i*dy - add - (ex->y3 + pos),
+                      ex->x3, ex->y3 + pos - hy, ex->x4, ex->y3 + pos + hy);
+    }
+    return;
+  }
+
+  if (is_tuple (t, "italic", 3)) {
+    draw (ren, t[1], x, y);
     return;
   }
 }
@@ -421,6 +487,8 @@ virtual_font_rep::draw_transformed (renderer ren, scheme_tree t, SI x, SI y,
 * Getting extents and drawing strings
 ******************************************************************************/
 
+bool is_hex_digit (char c);
+
 static tree
 subst_sharp (tree t, string by) {
   if (is_atomic (t)) {
@@ -428,6 +496,7 @@ subst_sharp (tree t, string by) {
     string s= t->label;
     i= search_forwards ("#", s);
     if (i == -1) return s;
+    else if (i == 0 && N(s) >= 2 && is_hex_digit (s[1])) return s;
     else return s(0,i) * by * s(i+1,N(s));
   }
   else {
@@ -544,6 +613,34 @@ virtual_font_rep::get_glyph (string s) {
   int c= get_char (s, cfnm, cfng);
   if (c == -1) return font_rep::get_glyph (s);
   else return cfng->get(c);
+}
+
+/******************************************************************************
+* Slope and italic correction
+******************************************************************************/
+
+double
+virtual_font_rep::get_left_slope (string s) {
+  tree t= get_tree (s);
+  if (is_tuple (t, "italic", 3))
+    return as_double (t[2]);
+  return font_rep::get_left_slope (s);
+}
+
+double
+virtual_font_rep::get_right_slope (string s) {
+  tree t= get_tree (s);
+  if (is_tuple (t, "italic", 3))
+    return as_double (t[2]);
+  return font_rep::get_right_slope (s);
+}
+
+SI
+virtual_font_rep::get_right_correction (string s) {
+  tree t= get_tree (s);
+  if (is_tuple (t, "italic", 3))
+    return (SI) (as_double (t[3]) * unit);
+  return font_rep::get_right_correction (s);
 }
 
 /******************************************************************************

@@ -76,10 +76,15 @@
   arrowvert Arrowvert bracevert)
 
 (logic-group latex-big-symbol%
-  sum int bigintwl oint bigointwl prod coprod
+  sum prod coprod
   bignone bigtimes bigoplus bigotimes bigodot
-  bigvee bigwedge bigsqcup bigcup bigcap bigpluscup bigtriangledown
-  bigtriangleup bigvarint bigiint bigiiint bigvaroint bigoiint)
+  bigvee bigwedge bigsqcup bigcup bigcap bigpluscup
+  bigtriangledown bigtriangleup
+  int bigiint bigiiint bigiiiint bigidotsint oint bigoiint bigoiiint
+  bigintwl bigiintwl bigiiintwl bigiiiintwl bigidotsintwl
+  bigointwl bigoiintwl bigoiiintwl
+  bigupint bigupiint bigupiiint bigupoint bigupoiint bigupoiiint
+  bigupintwl bigupiintwl bigupiiintwl bigupointwl bigupoiintwl bigupoiiintwl)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Symbols from latexsym package

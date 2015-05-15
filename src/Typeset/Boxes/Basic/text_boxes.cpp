@@ -363,32 +363,47 @@ get_delimiter (string s, font fn, SI height) {
 	  "invalid rubber character");
   height -= PIXEL;
   string radical= s (0, N(s)-1) * "-";
-  string first  = radical * "0>";
-  metric ex;
-  fn->get_extents (first, ex);
-  if ((ex->y2- ex->y1) >= height) return first;
-
-  string second  = radical * "1>";
-  fn->get_extents (second, ex);
-  SI h1= ex->y2- ex->y1;
-  if (h1 >= (height-PIXEL)) return second;
-
-  string third = radical * "2>";
-  metric ey;
-  fn->get_extents (third, ey);
-  SI h2= ey->y2- ey->y1;
-  if (h2 <= h1) return second;
-  SI  d= h2- h1;
-  int n= (height + (d-1) - h1) / d;
-
+  string best= radical * "0>";
+  SI best_h= 0;
+  int n= 0;
+  SI last= 0;
   while (true) {
-    string test= radical * as_string (n+1) * ">";
-    fn->get_extents (test, ey);
-    if (ey->y2- ey->y1 >= height) return test;
-    if ((ey->y2- ey->y1 <= h2) && (n>1)) return radical * as_string (n) * ">";
-    h2= ey->y2- ey->y1;
-    n++;
+    metric ex;
+    string test= radical * as_string (n) * ">";
+    fn->get_extents (test, ex);
+    SI h= ex->y2 - ex->y1;
+    if (h >= (height - (n==1? PIXEL: 0))) return test;
+    if (h > best_h) { best_h= h; best= test; }
+    int d= h - last;
+    if (last > 0 && d > 0) {
+      int plus= (height - h - 1) / d;
+      if (plus <= 1 || n <= 4) {
+	n++;
+	last= h;
+      }
+      else {
+	int n2= n + plus;
+	metric ex2;
+	string test2= radical * as_string (n2) * ">";
+	fn->get_extents (test2, ex2);
+	SI h2= ex2->y2 - ex2->y1;
+	if (h2 >= height || h2 < h) {
+	  n++;
+	  last= h;
+	}
+	else {
+	  n= n2;
+	  last= 0;
+	}
+      }
+    }
+    else if (last <= 0 || n < 10) {
+      n++;
+      last= h;
+    }
+    else return best;
   }
+  return s;
 }
 
 static string
@@ -414,6 +429,22 @@ get_wide (string s, font fn, SI width) {
     string test= radical * as_string (n+1) * ">";
     fn->get_extents (test, ey);
     if (ey->x2- ey->x1 > width) return radical * as_string (n) * ">";
+    n++;
+  }
+}
+
+static string
+get_wide_stix (string s, font fn, SI width) {
+  ASSERT (N(s) >= 2 && s[0] == '<' && s[N(s)-1] == '>',
+	  "invalid rubber character");
+  string radical= s (0, N(s)-1) * "-";
+  metric ex;
+  int n= 0;
+  while (true) {
+    string test= radical * as_string (n) * ">";
+    fn->get_extents (test, ex);
+    if (ex->x2- ex->x1 > width || n >= 6)
+      return radical * as_string (n) * ">";
     n++;
   }
 }
@@ -447,12 +478,21 @@ big_operator_box (path ip, string s, font fn, pencil pen, int n) {
   fn->get_extents (r, ex);
   SI y= fn->yfrac - ((ex->y1 + ex->y2) >> 1);
   box mvb= move_box (ip, text_box (ip, 0, r, fn, pen), 0, y, false, true);
-  return macro_box (ip, mvb, fn);
+  return macro_box (ip, mvb, fn, BIG_OP_BOX);
 }
 
 box
 wide_box (path ip, string s, font fn, pencil pen, SI width) {
   string r= get_wide (s, fn, width);
+  metric ex;
+  fn->get_extents (r, ex);
+  box b= text_box (ip, 0, r, fn, pen);
+  return macro_box (ip, b, fn);
+}
+
+box
+wide_stix_box (path ip, string s, font fn, pencil pen, SI width) {
+  string r= get_wide_stix (s, fn, width);
   metric ex;
   fn->get_extents (r, ex);
   box b= text_box (ip, 0, r, fn, pen);

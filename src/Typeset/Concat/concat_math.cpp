@@ -18,6 +18,11 @@
 
 void
 concater_rep::typeset_large (tree t, path ip, int tp, int otp, string prefix) {
+  font old_fn= env->fn;
+  if (starts (old_fn->res_name, "stix-"))
+    //if (old_fn->type == FONT_TYPE_UNICODE)
+    env->fn= rubber_font (old_fn);
+
   if ((N(t) == 1) && is_atomic (t[0])) {
     string s= prefix * t[0]->label * ">";
     box b= text_box (ip, 0, s, env->fn, env->pen);
@@ -48,6 +53,28 @@ concater_rep::typeset_large (tree t, path ip, int tp, int otp, string prefix) {
     print (STD_ITEM, otp, b);
   }
   else typeset_error (t, ip);
+
+  env->fn= old_fn;
+}
+
+static void
+get_big_flags (string l, bool& int_flag, bool& it_flag, bool& lim_flag) {
+  int n= N(l);
+  if (n < 3) return;
+  if (l[n-3] == 'l' && l[n-2] == 'i' && l[n-1] == 'm') {
+    l= l (0, n-3);
+    n -= 3;
+    if (l[n-3] != 'i' || l[n-2] != 'n' || l[n-1] != 't') return;
+    int_flag= true;
+    it_flag = l[0] != 'u' || l[1] != 'p';
+    lim_flag= true;
+  }
+  else {
+    if (l[n-3] != 'i' || l[n-2] != 'n' || l[n-1] != 't') return;
+    int_flag= true;
+    it_flag = l[0] != 'u' || l[1] != 'p';
+    lim_flag= false;
+  }
 }
 
 void
@@ -57,12 +84,28 @@ concater_rep::typeset_bigop (tree t, path ip) {
     string l= t[0]->label;
     string s= "<big-" * l * ">";
     bool flag= (!env->math_condensed) && (l != ".");
-    box b= big_operator_box (ip, s, env->fn, env->pen,
-			     env->display_style? 2: 1);
+    bool stix= starts (env->fn->res_name, "stix-");
+    box b;
+    if (env->fn->type == FONT_TYPE_UNICODE) {
+      font mfn= rubber_font (env->fn);
+      b= big_operator_box (ip, s, mfn, env->pen,
+                           env->display_style? 2: 1);
+    }
+    else b= big_operator_box (ip, s, env->fn, env->pen,
+                              env->display_style? 2: 1);
     print (STD_ITEM, OP_BIG, b);
     penalty_min (HYPH_PANIC);
-    if ((l != "int") && (l != "oint")) with_limits (LIMITS_DISPLAY);
-    if (flag) print (spc);
+    bool int_flag= false, it_flag= false, lim_flag= true;
+    get_big_flags (l, int_flag, it_flag, lim_flag);
+    if (lim_flag) with_limits (LIMITS_DISPLAY);
+    if (flag) {
+      if (int_flag) {
+        if (stix) print (env->display_style? (spc / 2): (spc / 4));
+        else if (it_flag) print (env->display_style? 0: (spc / 4));
+        else print (spc / 4);
+      }
+      else print (env->display_style? spc: (spc / 2));
+    }
     // temporarary: use parameters from operator-big class in std-math.syx
   }
   else typeset_error (t, ip);
@@ -266,8 +309,14 @@ concater_rep::typeset_sqrt (tree t, path ip) {
     if (disp) env->local_end (MATH_DISPLAY, old);
   }
   SI sep= env->fn->sep;
+  font lfn= env->fn;
+  bool stix= starts (lfn->res_name, "stix-");
+  if (stix) lfn= rubber_font (lfn);
   box sqrtb= delimiter_box (decorate_left (ip), "<large-sqrt>",
-                            env->fn, env->pen, b->y1, b->y2+ sep);
+                            lfn, env->pen, b->y1, b->y2+ sep);
+  if (stix) sqrtb= shift_box (decorate_left (ip), sqrtb,
+                              -env->fn->wline/2, -env->fn->wline/3,
+                              false, true);
   print (sqrt_box (ip, b, ind, sqrtb, env->fn, env->pen));
 }
 
@@ -286,9 +335,7 @@ concater_rep::typeset_wide (tree t, path ip, bool above) {
   if (ends (s, "brace>") || ends (s, "brace*>"))
     b= move_box (decorate_middle (descend (ip, 0)), b, 0, 0, true);
   print (wide_box (ip, b, s, env->fn, env->pen, request_wide, above));
-  if ((s == "<underbrace>") || (s == "<overbrace>") ||
-      (s == "<squnderbrace>") || (s == "<sqoverbrace>"))
-    with_limits (LIMITS_ALWAYS);
+  if (ends (s, "brace>")) with_limits (LIMITS_ALWAYS);
 }
 
 void
@@ -346,11 +393,20 @@ concater_rep::typeset_around (tree t, path ip, bool colored) {
       break;
     case VAR_AROUND:
       if (N(t) == 3) {
+        font old_fn= env->fn;
+        font new_fn= env->fn;
+        if (starts (new_fn->res_name, "stix-"))
+          //if (new_fn->type == FONT_TYPE_UNICODE)
+          new_fn= rubber_font (new_fn);
+        env->fn= new_fn;
         typeset (make_large (LEFT, t[0]),
                  decorate_middle (descend (ip, 0)));
+        env->fn= old_fn;
         typeset (t[1], descend (ip, 1));
+        env->fn= new_fn;
         typeset (make_large (RIGHT, t[2]),
                  decorate_middle (descend (ip, 2)));
+        env->fn= old_fn;
       }
       else typeset_error (t, ip);
       break;
