@@ -20,28 +20,19 @@
 
 struct rubber_stix_font_rep: font_rep {
   font base;
-  font baseL;
-  font baseD;
-  font intsD;
-  font up_ints;
-  font up_intsD;
-  font size1;
-  font size2;
-  font size3;
-  font size4;
-  font wide1;
-  font wide2;
-  font wide3;
-  font wide4;
-  font wide5;
-  font assemble1;
-  font assemble2;
+  int  dpi;
+  bool reg;
+
+  array<bool> initialized;
+  array<font> subfn;
 
   hashmap<string,int> mapper;
   hashmap<string,string> rewriter;
   hashmap<string,string> delimiter;
 
   rubber_stix_font_rep (string name, font base);
+  font get_font_sub (int nr);
+  font get_font (int nr);
   int search_font_sub (string s, string& rew, string& ltype);
   int search_font_cached (string s, string& rew, string& ltype);
   font search_font (string& s, SI& dy, string& ltype);
@@ -70,41 +61,62 @@ rubber_stix_font_rep::rubber_stix_font_rep (string name, font base2):
   font_rep (name, base2), base (base2)
 {
   this->copy_math_pars (base);
-  int dpi= (72 * base->wpt + (PIXEL/2)) / PIXEL;
-  baseL= base->magnify (sqrt (2.0));
-  baseD= base->magnify (2.0);
-  if (!occurs ("-bold-", base->res_name)) {
-    intsD= unicode_font ("STIXIntegralsD-Regular", base->size, dpi);
-    up_ints= unicode_font ("STIXIntegralsUp-Regular", base->size, dpi);
-    up_intsD= unicode_font ("STIXIntegralsUpD-Regular", base->size, dpi);
-    size1= unicode_font ("STIXSizeOneSym-Regular", base->size, dpi);
-    size2= unicode_font ("STIXSizeTwoSym-Regular", base->size, dpi);
-    size3= unicode_font ("STIXSizeThreeSym-Regular", base->size, dpi);
-    size4= unicode_font ("STIXSizeFourSym-Regular", base->size, dpi);
-    wide1= size1;
-    wide2= size2;
-    wide3= size3;
-    wide4= size4;
-    wide5= unicode_font ("STIXSizeFiveSym-Regular", base->size, dpi);
-    assemble1= rubber_assemble_font (base);
-    assemble2= rubber_assemble_font (size1);
+  dpi= (72 * base->wpt + (PIXEL/2)) / PIXEL;
+  reg= !occurs ("-bold-", base->res_name);
+  for (int i=0; i<18; i++) {
+    initialized << false;
+    subfn << base;
   }
-  else {
-    intsD= unicode_font ("STIXIntegralsD-Bold", base->size, dpi);
-    up_ints= unicode_font ("STIXIntegralsUp-Bold", base->size, dpi);
-    up_intsD= unicode_font ("STIXIntegralsUpD-Bold", base->size, dpi);
-    size1= unicode_font ("STIXSizeOneSym-Bold", base->size, dpi);
-    size2= unicode_font ("STIXSizeTwoSym-Bold", base->size, dpi);
-    size3= unicode_font ("STIXSizeThreeSym-Bold", base->size, dpi);
-    size4= unicode_font ("STIXSizeFourSym-Bold", base->size, dpi);
-    wide1= unicode_font ("STIXSizeOneSym-Regular", base->size, dpi);
-    wide2= unicode_font ("STIXSizeTwoSym-Regular", base->size, dpi);
-    wide3= unicode_font ("STIXSizeThreeSym-Regular", base->size, dpi);
-    wide4= unicode_font ("STIXSizeFourSym-Regular", base->size, dpi);
-    wide5= unicode_font ("STIXSizeFiveSym-Regular", base->size, dpi);
-    assemble1= rubber_assemble_font (base);
-    assemble2= rubber_assemble_font (wide1);
+}
+
+font
+rubber_stix_font_rep::get_font_sub (int nr) {
+  switch (nr) {
+  case 0: return base;
+  case 1: return base->magnify (sqrt (2.0));
+  case 2: return base->magnify (2.0);
+  case 3:
+    if (reg) return unicode_font ("STIXIntegralsD-Regular", base->size, dpi);
+    else return unicode_font ("STIXIntegralsD-Bold", base->size, dpi);
+  case 4:
+    if (reg) return unicode_font ("STIXIntegralsUp-Regular", base->size, dpi);
+    else return unicode_font ("STIXIntegralsD-Bold", base->size, dpi);
+  case 5:
+    if (reg) return unicode_font ("STIXIntegralsUpD-Regular", base->size, dpi);
+    else return unicode_font ("STIXIntegralsUpD-Bold", base->size, dpi);
+  case 6:
+    if (reg) return unicode_font ("STIXSizeOneSym-Regular", base->size, dpi);
+    else return unicode_font ("STIXSizeOneSym-Bold", base->size, dpi);
+  case 7:
+    if (reg) return unicode_font ("STIXSizeOneSym-Regular", base->size, dpi);
+    else return unicode_font ("STIXSizeOneSym-Bold", base->size, dpi);
+  case 8:
+    if (reg) return unicode_font ("STIXSizeTwoSym-Regular", base->size, dpi);
+    else return unicode_font ("STIXSizeTwoSym-Bold", base->size, dpi);
+  case 9:
+    if (reg) return unicode_font ("STIXSizeThreeSym-Regular", base->size, dpi);
+    else return unicode_font ("STIXSizeThreeSym-Bold", base->size, dpi);
+  case 10:
+    if (reg) return unicode_font ("STIXSizeFourSym-Regular", base->size, dpi);
+    else return unicode_font ("STIXSizeFourSym-Bold", base->size, dpi);
+  case 11: return unicode_font ("STIXSizeOneSym-Regular", base->size, dpi);
+  case 12: return unicode_font ("STIXSizeTwoSym-Regular", base->size, dpi);
+  case 13: return unicode_font ("STIXSizeThreeSym-Regular", base->size, dpi);
+  case 14: return unicode_font ("STIXSizeFourSym-Regular", base->size, dpi);
+  case 15: return unicode_font ("STIXSizeFiveSym-Regular", base->size, dpi);
+  case 16: return rubber_assemble_font (base);
+  case 17: return rubber_assemble_font (get_font (11));
+  default: return base;
   }
+}
+
+font
+rubber_stix_font_rep::get_font (int nr) {
+  ASSERT (nr < N(subfn), "wrong font number");
+  if (initialized[nr]) return subfn[nr];
+  subfn[nr]= get_font_sub (nr);
+  initialized[nr]= true;
+  return subfn[nr];
 }
 
 /******************************************************************************
@@ -114,6 +126,7 @@ rubber_stix_font_rep::rubber_stix_font_rep (string name, font base2):
 static string
 large_type (string s) {
   int pos= search_backwards ("-", N(s), s);
+  if (pos > 6 && s[pos-1] == '-') pos--;
   if (pos > 6) return s (1, pos);
   else if (!starts (s, "<") || !ends (s, ">")) return s;
   else return s (1, N(s) - 1);
@@ -123,6 +136,7 @@ static int
 large_size (string s) {
   int pos= search_backwards ("-", N(s), s);
   if (pos > 6) {
+    if (s[pos-1] == '-') pos--;
     string r= s (pos + 1, N(s) - 1);
     return as_int (r);
   }
@@ -180,9 +194,17 @@ rubber_stix_font_rep::search_font_sub (string s, string& rew, string& ltype) {
   }
   if (starts (s, "<left-|") || starts (s, "<left-interleave-")) {
     int nr= large_size (s);
-    if (nr == 0) rew= s;
-    else rew= "<" * large_type (s) * "-" * as_string (nr + 4) * ">";
-    return 16;
+    if (nr <= 0) {
+      string r= large_type (s);
+      r= r (5, N(r));
+      if (N(r) > 1) r= "<" * r * ">";
+      rew= r;
+      return 0;
+    }
+    else {
+      rew= "<" * large_type (s) * "-" * as_string (nr + 9) * ">";
+      return 16;
+    }
   }
   if (starts (s, "<left-") && ends (s, "-0>")) {
     rew= s;
@@ -216,12 +238,19 @@ rubber_stix_font_rep::search_font_sub (string s, string& rew, string& ltype) {
     int pos= search_backwards ("-", N(s), s);
     if (pos > 6) {
       string r= s (6, pos);
+      int nr= as_int (s (pos+1, N(s)-1));
       if (r == "(" || r == ")" ||
-          r == "[" || r == "]" ||
-          r == "{" || r == "}" ||
-          r == "lfloor" || r == "rfloor" ||
+          r == "[" || r == "]") {
+        rew= "<left-" * r * "-" * as_string (nr + 5) * ">";
+        return 17;
+      }
+      if (r == "{" || r == "}") {
+        rew= "<left-" * r * "-" * as_string (nr + 2) * ">";
+        return 17;
+      }
+      if (r == "lfloor" || r == "rfloor" ||
           r == "lceil" || r == "rceil") {
-        rew= s;
+        rew= "<left-" * r * "-" * as_string (nr + 9) * ">";
         return 17;
       }
       if (r == "/" || r == "\\" ||
@@ -281,7 +310,7 @@ rubber_stix_font_rep::search_font_cached (string s, string& rew, string& ltype) 
   mapper(s)= nr;
   rewriter(s)= rew;
   delimiter(s)= ltype;
-  //cout << s << " -> " << nr << ", " << rew << LF;
+  //cout << s << " -> " << nr << ", " << rew << ", " << ltype << LF;
   return nr;
 }
 
@@ -290,65 +319,9 @@ rubber_stix_font_rep::search_font (string& s, SI& dy, string& ltype) {
   string rew;
   int nr= search_font_cached (s, rew, ltype);
   s= rew;
-  switch (nr) {
-  case 0:
-    dy= 0;
-    return base;
-  case 1:
-    dy= 0;
-    return baseL;
-  case 2:
-    dy= 0;
-    return baseD;
-  case 3:
-    dy= (2 * base->yx) / 3;
-    return intsD;
-  case 4:
-    dy= (2 * base->yx) / 3;
-    return up_ints;
-  case 5:
-    dy= (2 * base->yx) / 3;
-    return up_intsD;
-  case 6:
-    dy= (2 * base->yx) / 3;
-    return size1;
-  case 7:
-    dy= 0;
-    return size1;
-  case 8:
-    dy= 0;
-    return size2;
-  case 9:
-    dy= 0;
-    return size3;
-  case 10:
-    dy= 0;
-    return size4;
-  case 11:
-    dy= 0;
-    return wide1;
-  case 12:
-    dy= 0;
-    return wide2;
-  case 13:
-    dy= 0;
-    return wide3;
-  case 14:
-    dy= 0;
-    return wide4;
-  case 15:
-    dy= 0;
-    return wide5;
-  case 16:
-    dy= 0;
-    return assemble1;
-  case 17:
-    dy= 0;
-    return assemble2;
-  default:
-    dy= 0;
-    return base;
-  }
+  if (nr < 3 || nr >= 7) dy= 0;
+  else dy= (2 * base->yx) / 3;
+  return get_font (nr);
 }
 
 font

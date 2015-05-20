@@ -357,10 +357,34 @@ text_box_rep::get_leaf_offset (string search) {
 * Computing right size for rubber characters
 ******************************************************************************/
 
+static int
+get_number (string s, int& pos) {
+  int n= N(s);
+  pos= n-1;
+  while (pos > 0 && s[pos] != '-') pos--;
+  if (pos > 0 && s[pos-1] == '-') pos--;
+  return as_int (s (pos+1, n-1));
+}
+
 static string
 get_delimiter (string s, font fn, SI height) {
-  ASSERT (N(s) >= 2 && s[0] == '<' && s[N(s)-1] == '>',
+  int ns= N(s);
+  ASSERT (ns >= 2 && s[0] == '<' && s[ns-1] == '>',
 	  "invalid rubber character");
+  if (s[ns-2] >= '0' && s[ns-2] <= '9') {
+    int pos;
+    int plus= get_number (s, pos);
+    if (pos > 0) {
+      string s2= s (0, pos) * ">";
+      string r2= get_delimiter (s2, fn, height);
+      int pos2;
+      int nr2= get_number (r2, pos2);
+      if (pos2 > 0) {
+        int nr= max (nr2 + plus, 0);
+        return r2 (0, pos2) * "-" * as_string (nr) * ">";
+      }
+    }
+  }
   height -= PIXEL;
   string radical= s (0, N(s)-1) * "-";
   string best= radical * "0>";
@@ -457,15 +481,36 @@ box
 delimiter_box (path ip, string s, font fn, pencil pen, SI bot, SI top) {
   SI h= top - bot;
   string r= get_delimiter (s, fn, h);
-  metric ex;
-  fn->get_extents (r, ex);
-  SI x= -ex->x1;
-  SI y= (top+ bot- ex->y1- ex->y2) >> 1;
+  box b= text_box (ip, 0, r, fn, pen);
+  SI x= -b->x1;
+  SI y= (top + bot - b->y1 - b->y2) >> 1;
   //cout << s << ", " << bot/PIXEL << " -- " << top/PIXEL
   //     << " -> " << r << "; " << x/PIXEL << ", " << y/PIXEL << "\n";
-  //cout << "  extents: " << ex->x1/PIXEL << ", " << ex->y1/PIXEL
-  //     << "; " << ex->x2/PIXEL << ", " << ex->y2/PIXEL << "\n";
-  box mvb= move_box (ip, text_box (ip, 0, r, fn, pen), x, y, false, true);
+  //cout << "  extents: " << b->x1/PIXEL << ", " << b->y1/PIXEL
+  //     << "; " << b->x2/PIXEL << ", " << b->y2/PIXEL << "\n";
+  box mvb= move_box (ip, b, x, y, false, true);
+  return macro_box (ip, mvb, fn);
+}
+
+box
+delimiter_box (path ip, string s, font fn, pencil pen,
+               SI bot, SI top, SI mid, SI real_bot, SI real_top)
+{
+  SI h= top - bot;
+  string r= get_delimiter (s, fn, h);
+  box b= text_box (ip, 0, r, fn, pen);
+  SI x= -b->x1;
+  SI y= (top + bot - b->y1 - b->y2) >> 1;
+  if (b->y2 - b->y1 < h) {
+    y= (mid - b->y1 - b->y2) >> 1;
+    y= min (top - b->y2, y);
+    y= max (bot - b->y1, y);
+  }
+  //cout << s << ", " << bot/PIXEL << " -- " << top/PIXEL
+  //     << " -> " << r << "; " << x/PIXEL << ", " << y/PIXEL << "\n";
+  //cout << "  extents: " << b->x1/PIXEL << ", " << b->y1/PIXEL
+  //     << "; " << b->x2/PIXEL << ", " << b->y2/PIXEL << "\n";
+  box mvb= move_box (ip, b, x, y, false, true);
   return macro_box (ip, mvb, fn);
 }
 

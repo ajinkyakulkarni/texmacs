@@ -246,6 +246,23 @@
       (rubber-space-increase t inc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Vertical adjustments
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(tm-define (vadjust-context? t)
+  (tree-in? t (reduce-by-tag-list)))
+
+(tm-define (geometry-speed t inc?)
+  (:require (vadjust-context? t))
+  (with inc (if inc? 1 -1)
+    (length-increase-step (tree-ref t 1) inc)))
+
+(tm-define (geometry-vertical t down?)
+  (:require (vadjust-context? t))
+  (with inc (if down? 1 -1)
+    (length-increase (tree-ref t 1) inc)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Move and shift
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,6 +351,12 @@
   (wrap-selection-small
     (insert-go-to `(clipped "" ,l ,b ,r ,t) '(0 0))
     (set-adjust-message "Adjust clipping" "clipped")))
+
+(tm-define (make-reduce-by by)
+  (:argument by "Reduce by")
+  (wrap-selection-small
+    (insert-go-to `(reduce-by "" ,by) '(0 0))
+    (set-adjust-message "Reduce vertical size" "reduce-by")))
 
 (define (replace-empty-horizontal t)
   (replace-empty t 1 `(plus "1l" ,(get-zero-unit)))

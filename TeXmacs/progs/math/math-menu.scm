@@ -1056,6 +1056,8 @@
       ("Grave" (make-wide "<grave>"))
       ("Dot" (make-wide "<dot>"))
       ("Two dots" (make-wide "<ddot>"))
+      ("Three dots" (make-wide "<dddot>"))
+      ("Four dots" (make-wide "<ddddot>"))
       ("Circle" (make-wide "<abovering>"))
       ---
       ("Overbrace" (make-wide "<wide-overbrace>"))
@@ -1064,8 +1066,10 @@
       ("Round underbrace" (make-wide "<wide-punderbrace*>"))
       ("Square overbrace" (make-wide "<wide-sqoverbrace>"))
       ("Square underbrace" (make-wide "<wide-squnderbrace*>"))
+      ---
       ("Right arrow" (make-wide "<wide-varrightarrow>"))
       ("Left arrow" (make-wide "<wide-varleftarrow>"))
+      ("Left-right arrow" (make-wide "<wide-varleftrightarrow>"))
       ("Wide bar" (make-wide "<wide-bar>")))
   (-> "Accent below"
       ("Tilda" (make-wide-under "~"))
@@ -1080,6 +1084,8 @@
       ("Grave" (make-wide-under "<grave>"))
       ("Dot" (make-wide-under "<dot>"))
       ("Two dots" (make-wide-under "<ddot>"))
+      ("Three dots" (make-wide-under "<dddot>"))
+      ("Four dots" (make-wide-under "<ddddot>"))
       ("Circle" (make-wide-under "<abovering>"))
       ---
       ("Overbrace" (make-wide-under "<wide-overbrace*>"))
@@ -1088,8 +1094,10 @@
       ("Round underbrace" (make-wide-under "<wide-punderbrace>"))
       ("Square overbrace" (make-wide-under "<wide-sqoverbrace*>"))
       ("Square underbrace" (make-wide-under "<wide-squnderbrace>"))
+      ---
       ("Right arrow" (make-wide-under "<wide-varrightarrow>"))
       ("Left arrow" (make-wide-under "<wide-varleftarrow>"))
+      ("Left-right arrow" (make-wide-under "<wide-varleftrightarrow>"))
       ("Wide bar" (make-wide-under "<wide-bar>")))
   (-> "Symbol" (link symbol-menu))
   (-> "Textual operator" (link textual-operator-menu))
@@ -1399,8 +1407,23 @@
           (alternate-second? (focus-tree)))
    (alternate-toggle (focus-tree))))
 
+(tm-menu (focus-extra-menu t)
+  (:require (tree-in? t '(left mid right around around*)))
+  ---
+  ("Increase size" (geometry-up))
+  ("Decrease size" (geometry-down))
+  ("Default size" (geometry-reset)))
+
 (tm-menu (focus-toggle-icons t)
   (:require (tree-in? t '(around around*)))
   ((check (balloon (icon "tm_large_around.xpm") "Large brackets") "v"
           (alternate-second? (focus-tree)))
-   (alternate-toggle (focus-tree))))
+   (alternate-toggle (focus-tree)))
+  ;; TODO: create suitable icons
+  ;;((balloon (icon "tm_plus.xpm") "Increase bracket size")
+  ;; (geometry-up))
+  ;;((balloon (icon "tm_minus.xpm") "Decrease bracket size")
+  ;; (geometry-down))
+  ;;((balloon (icon "tm_reset.xpm") "Reset to default bracket size")
+  ;; (geometry-reset))
+  )

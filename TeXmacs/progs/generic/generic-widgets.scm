@@ -93,13 +93,14 @@
            (check-same? new-env (cddr old-env)))))
 
 (define (accept-search-result? p)
-  (let* ((buf (buffer-tree))
-         (rel (path-strip (cDr p) (tree->path buf)))
-         (initial (cons 'attr (get-main-attrs get-init)))
-         (old-env (get-search-filter))
-         (new-env (tree-descendant-env buf rel initial)))
-    ;;(display* p " ~> " new-env "\n")
-    (check-same? (tm-children new-env) (tm-children old-env))))
+  (or (== (get-init "mode") "src")
+      (let* ((buf (buffer-tree))
+             (rel (path-strip (cDr p) (tree->path buf)))
+             (initial (cons 'attr (get-main-attrs get-init)))
+             (old-env (get-search-filter))
+             (new-env (tree-descendant-env buf rel initial)))
+        ;;(display* p " ~> " new-env "\n")
+        (check-same? (tm-children new-env) (tm-children old-env)))))
 
 (define (filter-search-results sels)
   (if (or (null? sels) (null? (cdr sels))) (list)
@@ -115,11 +116,30 @@
 (define search-serial 0)
 (define search-filter-out? #f)
 
-(define (perform-search-sub limit)
+(define (tree-perform-search t what p limit)
+  (let* ((source-mode 2)
+         (old-mode (get-access-mode))
+         (new-mode (if (== (get-init "mode") "src") source-mode old-mode)))
+    (set-access-mode new-mode)
+    (with r (tree-search-tree t what p limit)
+      (set-access-mode old-mode)
+      r)))
+
+(define (go-to* p)
+  (go-to p)
+  (when (and (not (cursor-accessible?)) (not (in-source?)))
+    (cursor-show-hidden)
+    (delayed
+      (:pause 25)
+      (set! search-serial (+ search-serial 1))
+      (perform-search-sub 100 #f))))
+
+(define (perform-search-sub limit top?)
   (let* ((what (buffer-get-body (search-buffer)))
          (ok? #t)
 	 (too-many-matches? #f)
-	 (serial search-serial))
+	 (serial search-serial)
+         (go-to** (if top? go-to* go-to)))
     (when (tm-func? what 'document 1)
       (set! what (tm-ref what 0)))
     (when (tm-func? what 'inactive 1)
@@ -131,9 +151,9 @@
           (begin
             (selection-cancel)
             (cancel-alt-selection "alternate")
-            (go-to (get-search-reference #t)))
+            (go-to** (get-search-reference #t)))
           (let* ((t (buffer-tree))
-                 (sels* (tree-search-tree t what (tree->path t) limit))
+                 (sels* (tree-perform-search t what (tree->path t) limit))
                  (sels (filter-search-results sels*)))
 	    ;;(display* "sels= " sels "\n")
 	    (cond ((>= (length sels*) limit)
@@ -142,7 +162,7 @@
 		  ((null? sels)
 		   (selection-cancel)
 		   (cancel-alt-selection "alternate")
-		   (go-to (get-search-reference #t))
+		   (go-to** (get-search-reference #t))
 		   (set! ok? #f))
 		  (else
 		   (set-alt-selection "alternate" sels)
@@ -158,11 +178,11 @@
       (delayed
 	(:pause limit)
 	(when (== serial search-serial)
-	  (perform-search-sub (* 2 limit)))))))
+	  (perform-search-sub (* 2 limit) top?))))))
 
 (define (perform-search*)
   (set! search-serial (+ search-serial 1))
-  (perform-search-sub 100))
+  (perform-search-sub 100 #t))
 
 (define (perform-search)
   (search-show-only)
@@ -213,7 +233,7 @@
                            (search-next sels cur strict?)
                            (search-previous sels cur strict?))
            (selection-set-range-set sel)
-           (go-to (car sel))
+           (go-to* (car sel))
            (when strict? (set-search-reference (car sel)))
            #t))))
 
@@ -224,7 +244,7 @@
                            (list (cAr (cDr sels)) (cAr sels))
                            (list (car sels) (cadr sels)))
            (selection-set-range-set sel)
-           (go-to (car sel))
+           (go-to* (car sel))
            (set-search-reference (car sel))))))
 
 (tm-define (search-next-match forward?)
@@ -262,7 +282,7 @@
          (cur (get-search-reference #t)))
     (and (nnull? sels)
          (and-with sel (search-next sels cur #f)
-           (go-to (car sel))
+           (go-to* (car sel))
            (selection-set-range-set sel)
            (clipboard-cut "dummy")
            (insert-go-to (tree-copy by) (path-end by '()))
@@ -333,6 +353,40 @@
   ("std 1" (insert '(wildcard "x")))
   ("std 2" (insert '(wildcard "y")))
   ("std 3" (insert '(wildcard "z"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Hacks for keyboard events between the moments that
+;; a search was triggered and that the search bar actually shows up
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define waiting-for-toolbar? #f)
+(define pending-key-strokes "")
+(define last-search "")
+
+(define (wait-for-toolbar)
+  (set! waiting-for-toolbar? #t)
+  (set! pending-key-strokes "")
+  (delayed
+    (:pause 3000)
+    (when waiting-for-toolbar?
+      (stop-waiting-for-toolbar))))
+
+(define (stop-waiting-for-toolbar)
+  (set! waiting-for-toolbar? #f))
+
+(tm-define (keyboard-press key time)
+  (:require waiting-for-toolbar?)
+  (when (== (tmstring-length key) 1)
+    (set! pending-key-strokes (string-append pending-key-strokes key)))
+  (when (in? key '("F3" "C-f" "A-f" "M-f" "C-g" "A-g" "M-g" "C-s" "A-s" "M-s"))
+    (set! pending-key-strokes last-search)))
+
+(define (notify-bar-change)
+  ;; FIXME: not clear what is the most appriate setting here
+  ;; The value 127 is safest, but causes the whole document to be re-typeset
+  (if (style-has? "beamer-style")
+      (notify-change 127)
+      (notify-change 68)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Search widget
@@ -452,6 +506,7 @@
 (tm-define (search-toolbar-keypress what r?)
   (with key (and (pair? what) (cadr what))
     (if (pair? what) (set! what (car what)))
+    (set! last-search what)
     (cond ((== key "home") (search-extreme-match #f))
           ((== key "end") (search-extreme-match #t))
           ((== key "up") (search-next-match #f))
@@ -479,7 +534,8 @@
     ;;  (texmacs-input `(document "")
     ;;                 `(style (tuple "generic"))
     ;;                 (search-buffer)))
-    (input (search-toolbar-keypress answer #f) "search" (list "") "25em")
+    (input (search-toolbar-keypress answer #f) "search"
+           (list pending-key-strokes) "25em")
     //
     ((balloon (icon "tm_search_first.xpm") "First occurrence")
      (search-extreme-match #f))
@@ -508,11 +564,14 @@
   (set! toolbar-replace-active? #f)
   (show-bottom-tools 0 #t)
   (search-toolbar-search "")
+  (wait-for-toolbar)
+  (notify-bar-change)
   (delayed
     (:idle 250)
     (keyboard-focus-on "search")
-    (perform-search)
-    (notify-change 68)))
+    (search-toolbar-search pending-key-strokes)
+    (notify-bar-change)
+    (stop-waiting-for-toolbar)))
 
 (tm-define (toolbar-search-end)
   (cancel-alt-selection "alternate")
@@ -522,8 +581,11 @@
   (set! toolbar-replace-active? #f)
   (show-bottom-tools 0 #f)
   (set! search-serial (+ search-serial 1))
+  (set! pending-key-strokes "")
   (when toolbar-db-active?
-    (db-show-toolbar)))
+    (db-show-toolbar))
+  (when (and (not (cursor-accessible?)) (not (in-source?)))
+    (cursor-show-hidden)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Replace toolbar
@@ -558,10 +620,12 @@
 (tm-widget (replace-toolbar)
   (hlist
     (text "Replace: ")
-    (input (search-toolbar-keypress answer #t) "replace-what" (list "") "15em")
+    (input (search-toolbar-keypress answer #t) "replace-what"
+           (list pending-key-strokes) "15em")
     //
     (text "by: ")
-    (input (replace-toolbar-keypress answer) "replace-by" (list "") "15em")
+    (input (replace-toolbar-keypress answer) "replace-by"
+           (list "") "15em")
     //
     ;;(if (nnull? (get-alt-selection "alternate"))
     ((balloon (icon "tm_search_first.xpm") "First occurrence")
@@ -596,11 +660,14 @@
   (set! toolbar-replace-active? #t)
   (show-bottom-tools 0 #t)
   (search-toolbar-search "")
+  (wait-for-toolbar)
+  (notify-bar-change)
   (delayed
     (:idle 250)
     (keyboard-focus-on "replace-what")
-    (perform-search)
-    (notify-change 68)))
+    (search-toolbar-search pending-key-strokes)
+    (notify-bar-change)
+    (stop-waiting-for-toolbar)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Hiding paragraphs which do not match

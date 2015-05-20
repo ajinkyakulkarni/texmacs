@@ -119,7 +119,8 @@
       ---
       ("Cartesian"   (graphics-set-visual-grid 'cartesian))
       ("Polar"       (graphics-set-visual-grid 'polar))
-      ("Logarithmic" (graphics-set-visual-grid 'logarithmic)))
+      ("Logarithmic" (graphics-set-visual-grid 'logarithmic))
+      ("Notebook"    (graphics-set-notebook-grid)))
   (when (!= (graphics-get-grid-type #t) 'empty)
     (-> "Center"
 	("Default"      (graphics-set-grid-center "0" "0" #t))
@@ -269,9 +270,11 @@
   ("Mathematics" (graphics-set-mode '(edit math-at)))
   (assuming (style-has? "std-markup-dtd")
     ---
-    (for (tag (sort gr-tags-user symbol<=?))
-      ((eval (upcase-first (symbol->string tag)))
-       (graphics-set-mode `(edit ,tag)))))
+    (with l (list-union gr-tags-user '(arrow-with-text arrow-with-text*))
+      (for (tag (sort l symbol<=?))
+        ((eval (upcase-first (symbol->string tag)))
+         (import-from (graphics graphics-markup))
+         (graphics-set-mode `(edit ,tag))))))
   ---
   ("Set properties" (graphics-set-mode '(group-edit props)))
   ("Move objects" (graphics-set-mode '(group-edit move)))
