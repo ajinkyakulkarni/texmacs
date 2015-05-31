@@ -359,7 +359,7 @@
   (define Prime-symbol
     (:type symbol)
     (:penalty panic)
-    "'" "`" "<dag>" "<ddag>" "<asterisk>" "<kreuz>")
+    "'" "`" "<dag>" "<ddag>" "<asterisk>" "<star>" "<kreuz>")
 
   (define Ponctuation-visible-symbol
     (:type separator)
@@ -407,7 +407,8 @@
   (define Suspension-nolim-symbol
     (:type symbol)
     (:penalty invalid invalid)
-    "<ldots>" "<cdots>" "<udots>" "<vdots>" "<ddots>" "<mdots>" "<colons>")
+    "<ldots>" "<cdots>" "<hdots>" "<vdots>"
+    "<ddots>" "<udots>" "<mdots>" "<colons>")
   
   (define Suspension-lim-symbol
     (:type symbol)
@@ -543,9 +544,13 @@
 
     "<uparrow>" "<Uparrow>" "<downarrow>" "<Downarrow>"
     "<updownarrow>" "<Updownarrow>" "<mapsup>" "<mapsdown>"
-    "<hookuparrow>" "<hookdownarrow>" "<longuparrow>" "<Longuparrow>"
+    "<hookuparrow>" "<hookdownarrow>"
+    "<upsquigarrow>" "<downsquigarrow>" "<updownsquigarrow>"
+    "<upequal>" "<downequal>"
+    "<longuparrow>" "<Longuparrow>"
     "<longdownarrow>" "<Longdownarrow>" "<longupdownarrow>" "<Longupdownarrow>"
     "<longmapsup>" "<longmapsdown>" "<longhookuparrow>" "<longhookdownarrow>"
+    "<longupequal>" "<longdownequal>" "<longupminus>" "<longdownminus>"
 
     "<prime>" "<emptyset>"
     "<surd>" "<top>" "<bot>" "<angle>"

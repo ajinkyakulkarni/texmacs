@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (smart-table latex-texmacs-macro
-  ;; arrows with limits
+  ;; arrows and other symbols with limits
   (leftarrowlim "\\mathop{\\leftarrow}\\limits")
   (rightarrowlim "\\mathop{\\rightarrow}\\limits")
   (leftrightarrowlim "\\mathop{\\leftrightarrow}\\limits")
@@ -41,14 +41,76 @@
   (Longleftarrowlim "\\mathop{\\longleftarrow}\\limits")
   (Longrightarrowlim "\\mathop{\\longrightarrow}\\limits")
   (Longleftrightarrowlim "\\mathop{\\longleftrightarrow}\\limits")
+  (cdotslim "\\mathop{\\cdots}\\limits")
 
+  ;; rotated arrows and other symbols
+  (mapsfrom (!group (mbox (rotatebox (!option "origin=c") "180"
+				     (!math (mapsto))))))
+  (longmapsfrom (!group (mbox (rotatebox (!option "origin=c") "180"
+					 (!math (longmapsto))))))
+  (mapmulti (!group (mbox (rotatebox (!option "origin=c") "180"
+				     (!math "\\multimap")))))
+  (leftsquigarrow (!group (mbox (rotatebox (!option "origin=c") "180"
+					   (!math (rightsquigarrow))))))
+  (upequal (!group (mbox (rotatebox (!option "origin=c") "90"
+				    (!math "=")))))
+  (downequal (!group (mbox (rotatebox (!option "origin=c") "-90"
+				      (!math "=")))))
+  (longupequal (!group (mbox (rotatebox (!option "origin=c") "90"
+					(!math (longequal))))))
+  (longdownequal (!group (mbox (rotatebox (!option "origin=c") "-90"
+					  (!math (longequal))))))
+  (longupminus (!group (mbox (rotatebox (!option "origin=c") "90"
+					(!math (longminus))))))
+  (longdownminus (!group (mbox (rotatebox (!option "origin=c") "-90"
+					  (!math (longminus))))))
+  (longuparrow (!group (mbox (rotatebox (!option "origin=c") "90"
+					(!math (longrightarrow))))))
+  (longdownarrow (!group (mbox (rotatebox (!option "origin=c") "-90"
+					  (!math (longrightarrow))))))
+  (longupdownarrow (!group (mbox (rotatebox (!option "origin=c") "-90"
+                                            (!math (longleftrightarrow))))))
+  (Longuparrow (!group (mbox (rotatebox (!option "origin=c") "90"
+					(!math (Longrightarrow))))))
+  (Longdownarrow (!group (mbox (rotatebox (!option "origin=c") "-90"
+					  (!math (Longrightarrow))))))
+  (Longupdownarrow (!group (mbox (rotatebox (!option "origin=c") "-90"
+                                            (!math (Longleftrightarrow))))))
+  (mapsup (!group (mbox (rotatebox (!option "origin=c") "90"
+				   (!math (mapsto))))))
+  (mapsdown (!group (mbox (rotatebox (!option "origin=c") "-90"
+				     (!math (mapsto))))))
+  (longmapsup (!group (mbox (rotatebox (!option "origin=c") "90"
+				       (!math (longmapsto))))))
+  (longmapsdown (!group (mbox (rotatebox (!option "origin=c") "-90"
+					 (!math (longmapsto))))))
+  (upsquigarrow (!group (mbox (rotatebox (!option "origin=c") "90"
+					 (!math (rightsquigarrow))))))
+  (downsquigarrow (!group (mbox (rotatebox (!option "origin=c") "-90"
+					   (!math (rightsquigarrow))))))
+  (updownsquigarrow (!group (mbox (rotatebox (!option "origin=c") "-90"
+                                             (!math (leftrightsquigarrow))))))
+  (hookuparrow (!group (mbox (rotatebox (!option "origin=c") "90"
+					(!math (hookrightarrow))))))
+  (hookdownarrow (!group (mbox (rotatebox (!option "origin=c") "-90"
+					  (!math (hookrightarrow))))))
+  (longhookuparrow (!group (mbox (rotatebox (!option "origin=c") "90"
+					    (!math (longhookrightarrow))))))
+  (longhookdownarrow (!group (mbox (rotatebox (!option "origin=c") "-90"
+					      (!math (longhookrightarrow))))))
+  (Backepsilon (!group (mbox (rotatebox (!option "origin=c") "180"
+					"E"))))
+  (Mho (!group (mbox (rotatebox (!option "origin=c") "180"
+				(!math "\\Omega")))))
+  (btimes (!group (mbox (rotatebox (!option "origin=c") "90"
+                                   (!math "\\ltimes")))))
+  
   ;; asymptotic relations by Joris
   (nasymp "\\not\\asymp")
   (asympasymp "{\\asymp\\!\\!\\!\\!\\!\\!-}")
   (nasympasymp "{\\not\\asymp\\!\\!\\!\\!\\!\\!-}")
   (simsim "{\\approx\\!\\!\\!\\!\\!\\!-}")
   (nsimsim "{\\not\\approx\\!\\!\\!\\!\\!\\!-}")
-  (npreccurlyeq "\\not\\preccurlyeq")
   (precprec "\\prec\\!\\!\\!\\prec")
   (precpreceq "\\preceq\\!\\!\\!\\preceq")
   (precprecprec "\\prec\\!\\!\\!\\prec\\!\\!\\!\\prec")
@@ -63,13 +125,6 @@
   (gggeq "\\geq\\!\\!\\!\\geq\\!\\!\\!\\geq")
 
   ;; extra literal symbols
-  (upequal (!group (mbox (rotatebox (!option "origin=c") "90" (!math "=")))))
-  (Backepsilon (!group (mbox (rotatebox (!option "origin=c") "180" "E"))))
-  (Mho (!group (mbox (rotatebox (!option "origin=c") "180" (!math "\\Omega")))))
-  (btimes (!group (mbox (rotatebox (!option "origin=c") "90"
-                                   (!math "\\ltimes")))))
-  (mapmulti (!group (mbox (rotatebox (!option "origin=c") "180"
-                                   (!math "\\multimap")))))
   (mathcatalan "C")
   (mathd "\\mathrm{d}")
   (mathD "\\mathrm{D}")
@@ -97,7 +152,6 @@
   (Exists "\\exists")
   (bigintwl "\\int")
   (bigointwl "\\oint")
-  (asterisk "*")
   (point ".")
   (cdummy "\\cdot")
   (comma "{,}")
@@ -111,21 +165,18 @@
   (nin "\\not\\in")
   (nni "\\not\\ni")
   (notni "\\not\\ni")
-  (nequiv "\\not\\equiv")
   (nleadsto (!annotate "\\not\\leadsto" (leadsto)))
   (dotamalg "\\mathaccent95{\\amalg}")
-  (dottimes "\\mathaccent95{\\times}")
   (dotoplus "\\mathaccent95{\\oplus}")
   (dototimes "\\mathaccent95{\\otimes}")
   (dotast "\\mathaccent95{*}")
   (into "\\rightarrow")
+  (longminus "{-\\!\\!-}")
   (longequal "{=\\!\\!=}")
   (longhookrightarrow "{\\lhook\\joinrel\\relbar\\joinrel\\rightarrow}")
   (longhookleftarrow "{\\leftarrow\\joinrel\\relbar\\joinrel\\rhook}")
-  (longdownarrow "\\downarrow")
-  (longuparrow "\\uparrow")
   (triangleup "\\triangle")
-  (precdot "{\\prec\\hspace{-0.6em}\\cdot}\\;\\,")
+  (tmprecdot "{\\prec\\hspace{-0.6em}\\cdot}\\;\\,")
   (preceqdot "{\\preccurlyeq\\hspace{-0.6em}\\cdot}\\;\\,")
   (llangle "{\\langle\\!\\langle}")
   (rrangle "{\\rangle\\!\\rangle}")
@@ -143,7 +194,13 @@
   (gflux "\\gg")
   (colons "\\,:\\,")
   (transtype "\\,:\\!!>")
-  (udots "{\\mathinner{\\mskip1mu\\raise1pt\\vbox{\\kern7pt\\hbox{.}}\\mskip2mu\\raise4pt\\hbox{.}\\mskip2mu\\raise7pt\\hbox{.}\\mskip1mu}}"))
+  (udots "{\\mathinner{\\mskip1mu\\raise1pt\\vbox{\\kern7pt\\hbox{.}}\\mskip2mu\\raise4pt\\hbox{.}\\mskip2mu\\raise7pt\\hbox{.}\\mskip1mu}}")
+  (subsetsim (underset (sim) (subset)))
+  (supsetsim (underset (sim) (supset)))
+  (rightmap (!group (!append (shortmid) "\\!\\!\\!-")))
+  (leftmap (!group (!append "-\\!\\!\\!" (shortmid))))
+  (leftrightmap (!group (!append (shortmid) "\\!\\!\\!-\\!\\!\\!"
+                                 (shortmid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Extra TeXmacs macros
@@ -184,6 +241,7 @@
   (tmtextit (!group (itshape) (!group 1)))
   (tmtextsc (!group (scshape) (!group 1)))
   (tmmathbf (ensuremath (boldsymbol 1)))
+  (tmmathmd (ensuremath 1))
   (tmop (ensuremath (operatorname 1)))
   (tmstrong (textbf 1))
   (tmem (!group "\\em " 1 "\\/"))
@@ -204,12 +262,15 @@
   (tmoutput 1)
   (tmerrput (!append (color "red!50!black") 1))
   (tmtiming (!append (hfill) (footnotesize) (color "black!50") 1 (par)))
+  (tmsubtitle (thanks (!append (textit (!translate "Subtitle:")) " " 1)))
   (tmrunningtitle (!append (!translate "Running title:") " " 1))
   (tmrunningauthor (!append (!translate "Running author:") " " 1))
-  (tmaffiliation (thanks (!append (textit (!translate "Affiliation:")) " " 1)))
-  (tmemail (thanks (!append (textit (!translate "Email:")) " " (texttt 1))))
-  (tmhomepage (thanks (!append (textit (!translate "Web:")) " " (texttt 1))))
-  (tmsubtitle (thanks (!append (textit (!translate "Subtitle:")) " " 1)))
+  (tmaffiliation (!append (!nextline) 1))
+  (tmemail (!append (!nextline) (textit (!translate "Email:")) " " (texttt 1)))
+  (tmhomepage (!append (!nextline) (textit (!translate "Web:")) " " (texttt 1)))
+  (tmfnaffiliation (thanks (!append (textit (!translate "Affiliation:")) " " 1)))
+  (tmfnemail (thanks (!append (textit (!translate "Email:")) " " (texttt 1))))
+  (tmfnhomepage (thanks (!append (textit (!translate "Web:")) " " (texttt 1))))
   (tmacmhomepage (titlenote (!append (textit (!translate "Web:")) " " 1)))
   (tmacmmisc (titlenote (!append (textit (!translate "Misc:")) " " 1)))
   (tmieeeemail (!append (textit (!translate "Email:")) " " 1))
@@ -297,6 +358,7 @@
   (tmaction (!group (!append (color "blue") 1)))
   (ontop (genfrac "" "" "0pt" "" 1 2))
   (subindex (index (!append 1 "!" 2)))
+  (renderfootnote (footnotetext (!append (tmrsup 1) " " 2)))
 
   ;; Ternary macros
   (tmsession (!group (!append (tt) 3)))
@@ -356,18 +418,14 @@
 	    ---
 	    (hspace* (fill)) (!math (Box)) (medskip)))
   ("leftaligned"
-   (!append (!begin "flushleft")
-	    ---
-            (!end "flushleft")))
+   ((!begin "flushleft") ---))
   ("rightaligned"
-   (!append (!begin "flushright")
-	    ---
-            (!end "flushright")))
+   ((!begin "flushright") ---))
+  ("quoteenv"
+   ((!begin "quote") ---))
   ("tmcode"
    ((!option "")
-    (!append (begin "alltt")
-	    ---
-             (end "alltt"))))
+    ((!begin "alltt") ---)))
   ("tmparmod"
    ((!begin "list" "" (!append "\\setlength{\\topsep}{0pt}"
 			       "\\setlength{\\leftmargin}{" 1 "}"
@@ -380,8 +438,8 @@
 	     ---)))
   ("tmparsep"
    (!append (begingroup) "\\setlength{\\parskip}{" 1 "}"
-	     ---
-	     (endgroup)))
+            ---
+            (endgroup)))
   ("tmindent"
    ((!begin "tmparmod" "1.5em" "0pt" "0pt") ---))
   ("elsequation" ((!begin "eqnarray") (!append --- "&&")))
@@ -491,14 +549,19 @@
     "\\renewcommand{\\mho}{\\mbox{\\rotatebox[origin=c]{180}{$\\omega$}}}"))
   (tmfloat
    (!append
+    (!ignore (ifthenelse) (captionof) (widthof))
     "\\newcommand{\\tmfloatcontents}{}\n"
     "\\newlength{\\tmfloatwidth}\n"
     "\\newcommand{\\tmfloat}[5]{\n"
     "  \\renewcommand{\\tmfloatcontents}{#4}\n"
     "  \\setlength{\\tmfloatwidth}{\\widthof{\\tmfloatcontents}+1in}\n"
     "  \\ifthenelse{\\equal{#2}{small}}\n"
-    "    {\\ifthenelse{\\lengthtest{\\tmfloatwidth > \\linewidth}}\n"
-    "      {\\setlength{\\tmfloatwidth}{\\linewidth}}{}}\n"
+    ;; FIXME: the length test frequently produces an error:
+    ;; '! Missing = inserted for \ifdim'.
+    ;; I (Joris) did not manage to understand this LaTeX mess.
+    ;;"    {\\ifthenelse{\\lengthtest{\\tmfloatwidth > \\linewidth}}\n"
+    ;;"      {\\setlength{\\tmfloatwidth}{\\linewidth}}{}}\n"
+    "    {\\setlength{\\tmfloatwidth}{0.45\\linewidth}}\n"
     "    {\\setlength{\\tmfloatwidth}{\\linewidth}}\n"
     "  \\begin{minipage}[#1]{\\tmfloatwidth}\n"
     "    \\begin{center}\n"

@@ -58,6 +58,7 @@
   (epsfig "epsfig")
   (includegraphics "graphicx")
   (rotatebox "graphicx")
+  (reflectbox "graphicx")
 
   (mathscr "mathrsfs")
   (EuScript "euscript")
@@ -134,7 +135,11 @@
   (index "makeidx")
   (printindex "makeidx")
 
-  (inparaenum "paralist"))
+  (inparaenum "paralist")
+
+  (listpart "expdlist")
+
+  (ifthispageodd "scrextend"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page size settings

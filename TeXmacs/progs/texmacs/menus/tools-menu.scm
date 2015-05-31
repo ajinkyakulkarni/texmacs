@@ -40,6 +40,9 @@
       ("Inclusions" (inclusions-gc))
       ("Plugins" (reinit-plugin-cache))
       ("Styles" (style-clear-cache)))
+  (if (url-exists-in-path? "pdflatex")
+      (-> "LaTeX"
+          (link tmtex-menu)))
   (-> "Web"
       ("Create web site" (tmweb-interactive-build))
       ("Update web site" (tmweb-interactive-update)))

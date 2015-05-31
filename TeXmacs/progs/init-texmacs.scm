@@ -112,6 +112,7 @@
 ;(display* "memory: " (texmacs-memory) " bytes\n")
 
 ;(display "Booting utilities\n")
+(use-modules (utils library cpp-wrap))
 (lazy-define (utils library cursor) notify-cursor-moved)
 (lazy-define (utils cas cas-out) cas->stree)
 (lazy-define (utils plugins plugin-cmd) pre-serialize verbatim-serialize)
@@ -197,6 +198,7 @@
 
 ;(display "Booting math mode\n")
 (lazy-keyboard (math math-kbd) in-math?)
+(lazy-keyboard (math math-sem-edit) in-sem-math?)
 (lazy-menu (math math-menu) math-format-menu math-format-icons
 	   math-menu math-insert-menu
            math-icons math-insert-icons
@@ -307,6 +309,7 @@
 (lazy-define (convert latex latex-tools) latex-set-virtual-packages
              latex-has-style? latex-has-package?
              latex-has-texmacs-style? latex-has-texmacs-package?)
+(lazy-menu (convert latex tmtex-widgets) tmtex-menu)
 ;(display* "time: " (- (texmacs-time) boot-start) "\n")
 ;(display* "memory: " (texmacs-memory) " bytes\n")
 
@@ -323,14 +326,18 @@
 ;(display* "memory: " (texmacs-memory) " bytes\n")
 
 ;(display "Booting security tools\n")
+(lazy-define (security wallet wallet-menu) with-wallet)
 (lazy-define (security wallet wallet-base)
 	     supports-wallet? wallet-initialized?
 	     wallet-on? wallet-off?)
-(lazy-define (security wallet wallet-menu) with-wallet)
-(lazy-define (security gpg gpg-widgets) open-gpg-key-manager)
 (lazy-menu (security wallet wallet-menu) wallet-preferences-widget)
+(lazy-define (security gpg gpg-edit) tree-export-encrypted
+	     tm-gpg-dialogue-passphrase-decrypt-buffer)
+(lazy-define (security gpg gpg-widgets) open-gpg-key-manager)
+(lazy-define (security gpg gpg-base) supports-gpg?)
+(lazy-menu (security gpg gpg-menu) gpg-menu document-encryption-menu)
 (lazy-menu (security gpg gpg-widgets) gpg-preferences-widget)
-(lazy-menu (security gpg gpg-menu) gpg-menu)
+
 ;(display* "time: " (- (texmacs-time) boot-start) "\n")
 ;(display* "memory: " (texmacs-memory) " bytes\n")
 
@@ -387,7 +394,7 @@
 ;(display* "memory: " (texmacs-memory) " bytes\n")
 
 ;(display "Booting regression testing\n")
-(lazy-define (check check-master) check-all)
+(lazy-define (check check-master) check-all run-checks)
 ;(display* "time: " (- (texmacs-time) boot-start) "\n")
 ;(display* "memory: " (texmacs-memory) " bytes\n")
 

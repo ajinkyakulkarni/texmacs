@@ -249,6 +249,8 @@ bib_change_first (tree& t, string (*change_fun) (string)) {
     return false;
   else if (is_func (t, WITH, 3) && t[0] == FONT_FAMILY && t[1] == "tt")
     return false;
+  else if (is_func (t, WITH, 3) && t[0] == MATH_FONT)
+    return false;
   else {
     int pos= 0;
     if (L(t) == WITH) pos= N(t)-1;
@@ -312,6 +314,7 @@ bib_change_case (tree& t, string (*change_case) (string)) {
   else if (is_compound (t, "verbatim"));
   else if (is_compound (t, "slink"));
   else if (is_func (t, WITH, 3) && t[0] == FONT_FAMILY && t[1] == "tt");
+  else if (is_func (t, WITH, 3) && t[0] == MATH_FONT);
   else if (L(t) == WITH) bib_change_case (t[N(t)-1], change_case);
   else if (L(t) == as_tree_label ("keepcase")) t= t[0];
   else if (L(t) == CONCAT || L(t) == DOCUMENT)
@@ -936,6 +939,8 @@ bib_parse_fields (tree& t) {
   int nb= bib_get_fields (t, fields);
   array<tree> latex= bib_latex_array (
       latex_to_tree (parse_latex (cork_to_sourcecode (fields), false, false)));
+  //cout << "<<< " << t << LF;
+  //cout << ">>> " << latex << LF;
   for (int k=0; k<N(latex); k++)
     if (is_atomic (latex[k]) && is_hyper_link (latex[k]->label))
       latex[k]= compound ("slink", latex[k]);

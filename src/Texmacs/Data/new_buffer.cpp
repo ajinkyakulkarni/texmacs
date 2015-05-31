@@ -477,6 +477,14 @@ load_style_tree (string package) {
 
 bool
 export_tree (tree doc, url u, string fm) {
+  // NOTE: hook for encryption
+  tree init= extract (doc, "initial");
+  if (fm == "texmacs")
+    for (int i=0; i<N(init); i++)
+      if (is_func (init[i], ASSOCIATE, 2) && init[i][0] == "encryption")
+	doc= as_tree (call ("tree-export-encrypted",
+			    object (u), object (doc)));
+  // END hook
   if (fm == "generic") fm= "verbatim";
   string s= tree_to_generic (doc, fm * "-document");
   if (s == "* error: unknown format *") return true;
@@ -516,6 +524,13 @@ buffer_export (url name, url dest, string fm) {
     doc << compound ("links", links);
   
   return export_tree (doc, dest, fm);
+}
+
+tree
+latex_expand (tree doc, url name) {
+  tm_view vw= concrete_view (get_recent_view (name));
+  tree body= vw->ed->exec_latex (extract (doc, "body"));
+  return change_doc_attr (doc, "body", body);
 }
 
 tree

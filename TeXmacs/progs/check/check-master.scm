@@ -17,7 +17,7 @@
 ;; Test LaTeX export
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (run-pdflatex tex-file)
+(tm-define (run-pdflatex tex-file)
   (and (url-exists? tex-file)
        (let* ((tex-dir  (url-head tex-file))
               (pdf-file (url-glue (url-unglue tex-file 4) ".pdf"))
@@ -66,3 +66,6 @@
 (tm-define (check-all u)
   (:synopsis "Run all regression tests in directory @u.")
   (check-latex-export u))
+
+(tm-define (run-checks)
+  (check-latex-export "$TEXMACS_CHECKS/latex-export"))

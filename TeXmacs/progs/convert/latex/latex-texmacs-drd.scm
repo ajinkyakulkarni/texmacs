@@ -21,21 +21,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (logic-group latex-texmacs-symbol%
-  ;; arrows with limits
+  ;; arrows and other symbols with limits
   leftarrowlim rightarrowlim leftrightarrowlim mapstolim
   longleftarrowlim longrightarrowlim longleftrightarrowlim longmapstolim
   leftsquigarrowlim rightsquigarrowlim leftrightsquigarrowlim
   equallim longequallim Leftarrowlim Rightarrowlim
   Leftrightarrowlim Longleftarrowlim Longrightarrowlim Longleftrightarrowlim
+  cdotslim
+
+  ;; rotated arrows and other symbols
+  mapsfrom longmapsfrom mapmulti leftsquigarrow
+  upequal downequal longupequal longdownequal longupminus longdownminus
+  longuparrow longdownarrow longupdownarrow
+  Longuparrow Longdownarrow Longupdownarrow
+  mapsup mapsdown longmapsup longmapsdown
+  upsquigarrow downsquigarrow updownsquigarrow
+  hookuparrow hookdownarrow longhookuparrow longhookdownarrow
+  Backepsilon Mho btimes
 
   ;; asymptotic relations by Joris
-  nasymp asympasymp nasympasymp simsim nsimsim npreccurlyeq
+  nasymp asympasymp nasympasymp simsim nsimsim
   precprec precpreceq precprecprec precprecpreceq
   succsucc succsucceq succsuccsucc succsuccsucceq
   lleq llleq ggeq gggeq
 
   ;; extra literal symbols
-  btimes Backepsilon Mho mapmulti
   mathcatalan mathd mathD mathe matheuler mathlambda mathi mathpi
   Alpha Beta Epsilon Eta Iota Kappa Mu Nu Omicron Chi Rho Tau Zeta
 
@@ -43,11 +53,14 @@
   exterior Exists bigintwl bigointwl asterisk point cdummy comma copyright
   bignone nobracket nospace nocomma noplus nosymbol
   nin nni notni nequiv nleadsto
-  dotamalg dottimes dotoplus dototimes dotast into longequal
-  longhookrightarrow longhookleftarrow longdownarrow longuparrow
-  triangleup precdot preceqdot llangle rrangle join um upl upm ump upequal
+  dotamalg dottimes dotoplus dototimes dotast into
+  longminus longequal
+  longhookrightarrow longhookleftarrow
+  triangleup tmprecdot preceqdot
+  llangle rrangle join um upl upm ump
   assign plusassign minusassign timesassign overassign
-  lflux gflux colons transtype udots)
+  lflux gflux colons transtype udots subsetsim supsetsim
+  rightmap leftmap leftrightmap)
 
 (logic-rules
   ((latex-texmacs-arity% 'x 0) (latex-texmacs-symbol% 'x))
@@ -65,12 +78,14 @@
 (logic-group latex-texmacs-1%
   key tmrsub tmrsup keepcase
   tmtextrm tmtextsf tmtexttt tmtextmd tmtextbf
-  tmtextup tmtextsl tmtextit tmtextsc tmmathbf
+  tmtextup tmtextsl tmtextit tmtextsc tmmathbf tmmathmd
   tmverbatim tmop tmstrong tmem tmtt tmname tmsamp tmabbr
   tmdfn tmkbd tmvar tmacronym tmperson tmscript tmdef
   dueto op tmdate tmoutput tmerrput tmtiming
-  tmrunningtitle tmrunningauthor tmaffiliation tmemail tmhomepage
-  tmsubtitle tmacmhomepage tmacmmisc tmieeeemail tmnote tmmisc)
+  tmsubtitle tmrunningtitle tmrunningauthor
+  tmaffiliation tmemail tmhomepage
+  tmfnaffiliation tmfnemail tmfnhomepage
+  tmacmhomepage tmacmmisc tmieeeemail tmnote tmmisc)
 
 (logic-group latex-texmacs-1*%
   tmcodeinline)
@@ -88,7 +103,8 @@
   tmfoldedgrouped tmunfoldedgrouped tmfoldedexplain tmunfoldedexplain
   tmfoldedplain tmunfoldedplain tmfoldedenv tmunfoldedenv
   tmfoldedstd tmunfoldedstd tmfolded tmunfolded
-  tminput tminputmath tmhlink tmaction ontop subindex)
+  tminput tminputmath tmhlink tmaction ontop subindex
+  renderfootnote)
 
 (logic-group latex-texmacs-3%
   tmsession tmfoldedio tmunfoldedio tmfoldediomath tmunfoldediomath
@@ -140,7 +156,7 @@
   ("tmcode" #t))
 
 (logic-group latex-texmacs-environment-0%
-  begin-proof begin-leftaligned begin-rightaligned
+  begin-proof begin-leftaligned begin-rightaligned begin-quoteenv
   begin-tmindent begin-elsequation begin-elsequation*)
 
 (logic-group latex-texmacs-environment-0*%

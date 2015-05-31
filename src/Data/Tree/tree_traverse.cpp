@@ -396,9 +396,13 @@ acceptable_border (tree t, path p, path q, hashset<int> labs) {
 
 static bool
 acceptable_child (tree t, path p, hashset<int> labs) {
+  tree st= subtree (t, path_up (p));
+  if (is_compound (st) && labs->contains ((int) L(st)))
+    if (last_item (p) == 0 || last_item (p) == 1)
+      return true;
   p= path_up (p);
   while (!is_nil (p)) {
-    tree st= subtree (t, path_up (p));
+    st= subtree (t, path_up (p));
     if (labs->contains ((int) L(st)))
       if (is_accessible_child (st, last_item (p)))
         return true;
@@ -507,6 +511,30 @@ more_inside (tree t, path p, path q, tree_label which) {
   return
     search_upwards (t, path_up (q), which) <=
     search_upwards (t, path_up (p), which);
+}
+
+bool
+var_inside_same_sub (tree t, path p, path q, tree_label which) {
+  path pq= search_upwards (t, path_up (q), which);
+  path pp= search_upwards (t, path_up (p), which);
+  if (!(pq <= pp)) return false;
+  path c= common (p, q);
+  tree st= subtree (t, c);
+  path sp= p / c;
+  path sq= q / c;
+  if (N(sp) == 0 || N(sq) == 0) return false;
+  if (sp == path (0) || sp == path (1)) return true;
+  if (sq == path (0) || sq == path (1)) return true;
+  // TODO: maybe further adjustments will be necessary in the future
+  return false;
+}
+
+bool
+var_inside_same (tree t, path p, path q, tree_label which) {
+  return
+    inside_same (t, p, q, which) ||
+    var_inside_same_sub (t, p, q, which) ||
+    var_inside_same_sub (t, q, p, which);
 }
 
 /******************************************************************************

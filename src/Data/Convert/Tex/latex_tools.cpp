@@ -313,6 +313,9 @@ get_metadata_arity (string s, bool abs_flag) {
     metadata_commands ("\\tmaffiliation")= 1;
     metadata_commands ("\\tmemail")= 1;
     metadata_commands ("\\tmhomepage")= 1;
+    metadata_commands ("\\tmfnaffiliation")= 1;
+    metadata_commands ("\\tmfnemail")= 1;
+    metadata_commands ("\\tmfnhomepage")= 1;
     metadata_commands ("\\tmmisc")= 1;
     metadata_commands ("\\tmnote")= 1;
     metadata_commands ("\\tmsubtitle")= 1;
@@ -471,30 +474,4 @@ latex_unchanged_metadata (string olds, string news, bool abs_flag) {
     if (olds (oldps[i][0], oldps[i][1]) != news (newps[i][0], newps[i][1]))
       return false;
   return true;
-}
-
-/******************************************************************************
-* Getting information out of log files
-******************************************************************************/
-
-int
-number_latex_errors (url log) {
-  string s;
-  if (load_string (log, s, false)) return -1;
-  //cout << "Log file" << LF << HRULE << s << HRULE;
-  //return count_occurrences ("\n! ", s);
-  return count_occurrences ("! ", s);
-}
-
-int
-number_latex_pages (url log) {
-  string s;
-  if (load_string (log, s, false)) return -1;
-  int pos= search_backwards ("Output written on ", s);
-  if (pos < 0) return -1;
-  pos= search_forwards (" pages, ", pos, s);
-  if (pos < 0) return -1;
-  int end= pos;
-  while (pos > 0 && is_numeric (s[pos-1])) pos--;
-  return as_int (s (pos, end));
 }

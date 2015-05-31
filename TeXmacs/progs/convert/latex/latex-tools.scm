@@ -86,7 +86,7 @@
   (in? p latex-dependencies))
 
 (tm-define (latex-book-style?)
-  (in? latex-style '("book")))
+  (in? latex-style '("book" "svmono")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Catcode generation
@@ -184,20 +184,26 @@
 (define (latex-texmacs-arity x)
   (if (env-begin? x)
       (latex-texmacs-arity
-       (string->symbol (string-append "begin-" (cadr x))))
+       (string->symbol (string-append "begin-" (tex-env-name (cadr x)))))
       (logic-ref latex-texmacs-arity% x)))
 
 (define (latex-needs? x)
   (if (env-begin? x)
       (latex-needs?
-       (string->symbol (string-append "begin-" (cadr x))))
+       (string->symbol (string-append "begin-" (tex-env-name (cadr x)))))
       (logic-ref latex-needs% x)))
 
 (define (latex-texmacs-option? x)
   (if (env-begin? x)
       (latex-texmacs-option?
-       (string->symbol (string-append "begin-" (cadr x))))
+       (string->symbol (string-append "begin-" (tex-env-name (cadr x)))))
       (logic-ref latex-texmacs-option% x)))
+
+(define (latex-texmacs-macro-body x)
+  (smart-ref latex-texmacs-macro x))
+
+(define (latex-texmacs-environment-body x)
+  (smart-ref latex-texmacs-environment (tex-env-name x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Macro and environment expansion
@@ -218,10 +224,10 @@
   (if (npair? t) t
       (let* ((head  (car t))
 	     (tail  (map latex-expand-macros (cdr t)))
-	     (body  (smart-ref latex-texmacs-macro head))
+	     (body  (latex-texmacs-macro-body head))
 	     (arity (and body (latex-texmacs-arity head)))
 	     (env   (and (env-begin? head)
-			 (smart-ref latex-texmacs-environment (cadr head))))
+			 (latex-texmacs-environment-body (cadr head))))
 	     (envar (and env (latex-texmacs-arity head))))
 	(cond ((and body (== (length tail) arity))
 	       (latex-substitute body t))
@@ -244,7 +250,7 @@
 	((list? t) (map (cut latex-expand-def <> protect?) t))
 	(else t)))
 
-;; TODO: to be rewrited with better factorisation
+;; TODO: to be rewritten with better factorisation
 (define (latex-macro-defs-sub t)
   (when (pair? t)
     (if (and (or (func? t 'newcommand) (func? t 'renewcommand))
@@ -252,7 +258,7 @@
       (for-each latex-macro-defs-sub (cddr t))
       (for-each latex-macro-defs-sub (cdr t)))
     (let* ((body   (and (not (latex-needs? (car t)))
-                        (smart-ref latex-texmacs-macro (car t))))
+                        (latex-texmacs-macro-body (car t))))
 	   (arity  (and body (latex-texmacs-arity (car t))))
            (option (and body (latex-texmacs-option? (car t))))
            (args   (if option (filter (lambda (x)
@@ -267,7 +273,7 @@
 	(latex-macro-defs-sub body)))
     (let* ((body  (and (env-begin? (car t))
                        (not (latex-needs? (car t)))
-                       (smart-ref latex-texmacs-environment (cadar t))))
+                       (latex-texmacs-environment-body (cadar t))))
 	   (arity (and body (latex-texmacs-arity (car t))))
            (option (and body (latex-texmacs-option? (car t))))
            (args   (and body
@@ -352,7 +358,7 @@
     (set! body (string-replace body "*/!!/*" "\n\n"))
     (set! arity (if (= arity 0) ""
                   (string-append "[" (number->string arity) "]")))
-    (string-append "\\newenvironment{" name "}"
+    (string-append "\\newenvironment{" (tex-env-name name) "}"
 		   arity option "{" body "}\n")))
 
 (tm-define (latex-serialize-preamble t)
@@ -491,16 +497,17 @@
 
 (tm-define (html-color->latex-xcolor s)
   "Take an hexa html color string and return an hex triplet string"
-  (cond ((string-starts? s "#") (html-color->latex-xcolor (string-tail s 1)))
-        ((== 3 (string-length s))
-         (let ((r (substring s 0 1))
-               (g (substring s 1 2))
-               (b (substring s 2 3)))
-           (string-append r r g g b b)))
-        ((== 4 (string-length s)) (html-color->latex-xcolor (string-take s 3)))
-        ((== 6 (string-length s)) s)
-        ((== 8 (string-length s)) (string-take s 6))
-        (else s)))
+  (upcase-all
+   (cond ((string-starts? s "#") (html-color->latex-xcolor (string-tail s 1)))
+         ((== 3 (string-length s))
+          (let ((r (substring s 0 1))
+                (g (substring s 1 2))
+                (b (substring s 2 3)))
+            (string-append r r g g b b)))
+         ((== 4 (string-length s)) (html-color->latex-xcolor (string-take s 3)))
+         ((== 6 (string-length s)) s)
+         ((== 8 (string-length s)) (string-take s 6))
+         (else s))))
 
 (define (latex-colors-defs colors)
   (apply string-append
@@ -523,22 +530,23 @@
 
 (tm-define (latex-preamble text style lan init colors colormaps)
   (:synopsis "Compute preamble for @text")
-  (set! latex-packages-option (make-ahash-table))
-  (set-packages-option "xcolor" colormaps)
-  (let* ((Page         (latex-preamble-page-type init))
-	 (Macro        (latex-macro-defs text))
-	 (Colors       (latex-colors-defs colors))
-	 (Text         (list '!tuple Page Macro Colors text))
-	 (pre-page     (latex-serialize-preamble Page))
-	 (pre-macro    (latex-serialize-preamble Macro))
-	 (pre-colors   (latex-serialize-preamble Colors))
-	 (pre-catcode  (latex-catcode-defs Text))
-	 (pre-uses     (latex-use-package-command Text)))
-    (values
-      (cond ((and (in? "amsthm" latex-all-packages)
-                  (== style "amsart")) "[amsthm]")
-            ((list? style) (latex-make-option (cDr style)))
-            (else ""))
-      (string-append pre-uses)
-      (string-append pre-page)
-      (string-append pre-catcode pre-macro pre-colors))))
+  (with-global tmtex-style (if (list? style) (cAr style) style)
+    (set! latex-packages-option (make-ahash-table))
+    (set-packages-option "xcolor" colormaps)
+    (let* ((Page         (latex-preamble-page-type init))
+           (Macro        (latex-macro-defs text))
+           (Colors       (latex-colors-defs colors))
+           (Text         (list '!tuple Page Macro Colors text))
+           (pre-page     (latex-serialize-preamble Page))
+           (pre-macro    (latex-serialize-preamble Macro))
+           (pre-colors   (latex-serialize-preamble Colors))
+           (pre-catcode  (latex-catcode-defs Text))
+           (pre-uses     (latex-use-package-command Text)))
+      (values
+        (cond ((and (in? "amsthm" latex-all-packages)
+                    (== style "amsart")) "[amsthm]")
+              ((list? style) (latex-make-option (cDr style)))
+              (else ""))
+        (string-append pre-uses)
+        (string-append pre-page)
+        (string-append pre-catcode pre-macro pre-colors)))))

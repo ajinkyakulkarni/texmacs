@@ -16,8 +16,25 @@
 	(convert tools output)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make environment names acceptable
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(tm-define (tex-env-name s)
+  (if (string? s) (string-replace s "-" "") s))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interface for unicode output
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (uses-cyrillic? t)
+  (and tmtex-use-ascii?
+       (cond ((func? t '!widechar 1)
+              (with s (string-convert (symbol->string (cadr t)) "UTF-8" "LaTeX")
+                (or (string-starts? s "{\\cyr")
+                    (string-starts? s "{\\CYR"))))
+             ((pair? t)
+              (list-or (map uses-cyrillic? (cdr t))))
+             (else #f))))
 
 (define (output-tex s)
   (output-text (if tmtex-use-ascii? (string-convert s "UTF-8" "LaTeX") s)))
@@ -92,6 +109,9 @@
                      (set! pre-end "\n\\end{CJK*}")
                      (output-verbatim "\\usepackage{CJK}\n")))
                   (else
+                    (if (or (uses-cyrillic? doc-preamble)
+                            (uses-cyrillic? doc-body))
+                        (output-verbatim "\\usepackage[T2A,T1]{fontenc}\n"))
                     (with langs
                       (apply string-append (list-intersperse lan ", "))
                       (output-verbatim "\\usepackage[" langs "]{babel}\n"))
@@ -99,7 +119,7 @@
                       (output-verbatim "\\usepackage[utf8]{inputenc}\n")))))
           (output-verbatim tm-uses)
           (if (string-occurs? "makeidx" (latex-use-package-command doc-body))
-            (output-verbatim "\\makeindex"))
+            (output-verbatim "\\makeindex\n"))
           (output-verbatim tm-init)
 
           (if (!= tm-preamble "")
@@ -363,6 +383,7 @@
   (texout-args args))
 
 (define (texout-begin* what args inside)
+  (set! what (tex-env-name what))
   (output-tex (string-append "\\begin{" what "}"))
   (texout-args args)
   (output-lf)
@@ -371,6 +392,7 @@
   (output-tex (string-append "\\end{" what "}")))
 
 (define (texout-begin what args inside)
+  (set! what (tex-env-name what))
   (output-tex (string-append "\\begin{" what "}"))
   (texout-args args)
   (output-indent 2)
@@ -432,6 +454,7 @@
 	((== (car x) '!sub) (texout-script "_" (cdr x)))
 	((== (car x) '!sup) (texout-script "^" (cdr x)))
 	((== (car x) '!annotate) (texout (cadr x)))
+	((== (car x) '!ignore) (noop))
 	((and (list? (car x)) (== (caar x) '!begin))
 	 (texout-begin (cadar x) (cddar x) (cadr x)))
 	((and (list? (car x)) (== (caar x) '!begin*))

@@ -38,7 +38,7 @@
   begingroup endgroup printindex today bmod toprule midrule bottomrule
 
   ;; AMS commands
-  qed dotsc dotsb dotsm dotsi dotso
+  dotsc dotsb dotsm dotsi dotso qed
   ;; temporarily
   hline hrulefill
   ;; rewritten
@@ -80,7 +80,7 @@
   newlength newdimen newskip
   Comment COMMENT For ForAll If Input KwData KwResult KwRet lnl nllabel
   lElse uElse Output Repeat Until UNTIL While
-  etalchar MR)
+  etalchar MR listpart)
 
 (logic-group latex-command-1% ;; . needs a special treatment
   ,(string->symbol "."))
@@ -90,7 +90,8 @@
   sideset stackrel citeauthoryear
   setcounter addtocounter setlength addtolength
   colorbox scalebox texorpdfstring raisebox foreignlanguage
-  Call Function Procedure SetKw SetKwData SetKwFunction SetKwInOut)
+  Call Function Procedure SetKw SetKwData SetKwFunction SetKwInOut
+  ifthispageodd)
 
 (logic-group latex-command-3%
   ifthenelse resizebox fcolorbox @setfontsize eIf multicolumn)

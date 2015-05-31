@@ -3951,6 +3951,56 @@ upgrade_quotes (tree t) {
 }
 
 /******************************************************************************
+* Upgrade ancient
+******************************************************************************/
+
+static charp equation_tags[]= {
+  "equation", "equation*", "eqnarray", "eqnarray*",
+  "leqnarray", "leqnarray*", "align", "align*",
+  "falign", "falign*", "aligned", "aligned*",
+  "multline", "multline*", "gather", "gather*",
+  "eqsplit", "eqsplit*",
+  ""
+};
+
+bool
+is_equation_env (tree t) {
+  if (is_atomic (t) || N(t) != 1) return false;
+  static hashset<tree_label> H;
+  if (N(H) == 0)
+    for (int i=0; equation_tags[i][0] != '\0'; i++)
+      H->insert (as_tree_label (equation_tags[i]));
+  return H->contains (L(t));
+}
+
+tree
+upgrade_ancient (tree t) {
+  // Miscellaneous upgradings for old documents
+  if (is_atomic (t)) return t;
+  else if (is_func (t, INACTIVE, 1) && is_func (t[0], RIGID))
+    return upgrade_ancient (t[0]);
+  else if (is_equation_env (t) && !is_func (t[0], DOCUMENT))
+    return tree (L(t), tree (DOCUMENT, upgrade_ancient (t[0])));
+  else {
+    int i, n= N(t);
+    tree r (t, n);
+    for (i=0; i<n; i++)
+      r[i]= upgrade_ancient (t[i]);
+    if (is_func (r, WITH)) {
+      bool font_series= false;
+      for (i=0; i+1<n; i+=2)
+        if (r[i] == FONT_SERIES) font_series= true;
+      for (i=0; i+1<n; i+=2)
+        if (r[i] == MATH_FONT_SERIES && !font_series) {
+          tree ins= tree (WITH, FONT_SERIES, copy (r[i+1]));
+          return r (0, i) * ins * r (i, N(r));
+        }
+    }
+    return r;
+  }
+}
+
+/******************************************************************************
 * Upgrade from previous versions
 ******************************************************************************/
 
@@ -4131,8 +4181,10 @@ upgrade (tree t, string version) {
     t= upgrade_varsession (t);
     t= upgrade_subsession (t);
   }
-  if (version_inf_eq (version, "1.99.2"))
+  if (version_inf_eq (version, "1.99.2")) {
     t= upgrade_quotes (t);
+    t= upgrade_ancient (t);
+  }
   
   if (is_non_style_document (t))
     t= automatic_correct (t, version);

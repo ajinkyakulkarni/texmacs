@@ -16,6 +16,7 @@
 #include "base64.hpp"
 #include "iterator.hpp"
 #include "fast_search.hpp"
+#include "file.hpp"
 
 /******************************************************************************
 * Add markers to TeXmacs document
@@ -146,7 +147,7 @@ latex_check_transparency (string ums, string s,
 }
 
 /******************************************************************************
-* LaTeX -> TeXmacs conversion with source tracking
+* TeXmacs -> LaTeX conversion with source tracking
 ******************************************************************************/
 
 string
@@ -171,26 +172,29 @@ purify (tree d) {
   return r;
 }
 
-string
-tracked_texmacs_to_latex (tree d, object opts) {
-  if (get_preference ("texmacs->latex:source-tracking", "off") != "on")
-    return tree_to_latex_document (d, opts);
-  tree t= extract (d, "body");
-
-  string ms, s;
+bool
+tracked_tree_to_latex_document (tree d, object opts, string& s, string& ms) {
+  tree   t      = extract (d, "body");
   string tt_opt = "texmacs->latex:transparent-source-tracking";
   bool   tt_flag= get_preference (tt_opt, "off") == "on";
   if (tt_flag) s= tree_to_latex_document (d, opts);
 
   hashset<path> invalid;
   hashmap<int,array<path> > corr;
+  int attempt= 0;
   while (true) {
+    attempt++;
     //cout << HRULE << "Invalid markers" << LF << HRULE << invalid << LF;
     hashset<path> l= copy (invalid);
     tree mt= texmacs_mark (t, path (), l);
     //cout << HRULE << "Marked texmacs" << LF << HRULE << mt << LF;
     tree md= change_doc_attr (d, "body", mt);
     ms= tree_to_latex_document (md, opts);
+    if (false) {
+      cout << "Attempt " << attempt << LF;
+      string mname= "marked-" * as_string (attempt) * ".tex";
+      save_string ("$TEXMACS_HOME_PATH/system/tmp/" * mname, ms, false);
+    }
     //cout << HRULE << "Marked latex" << LF << HRULE << ms << LF;
     l->insert (path (-1)); // force checking
     string ums= latex_unmark (ms, l, corr);
@@ -204,9 +208,19 @@ tracked_texmacs_to_latex (tree d, object opts) {
     latex_declare_transparent (ms, new_invalid);
     if (N(new_invalid) > N(invalid)) { invalid= new_invalid; continue; }
     latex_check_transparency (ums, s, corr, invalid);
-    if (N(invalid) <= old_nr) return s;
+    if (N(invalid) <= old_nr) return true;
   }
   //cout << HRULE << "Marked latex" << LF << HRULE << ms << LF;
+  return false;
+}
+
+string
+tracked_texmacs_to_latex (tree d, object opts) {
+  if (get_preference ("texmacs->latex:source-tracking", "off") != "on")
+    return tree_to_latex_document (d, opts);
+
+  string ms, s;
+  if (tracked_tree_to_latex_document (d, opts, s, ms)) return s;
 
   string post;
   post << tree_to_scheme (purify (d));
