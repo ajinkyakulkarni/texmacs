@@ -281,6 +281,10 @@
     (Main "\n")
     Relaxed-expressions)
 
+  (define Strict
+    (Strict "\n")
+    Relaxed-expressions)
+
   (define Relaxed-expressions
     (Relaxed-expressions Middle Relaxed-expression-list)
     Relaxed-expression-list)
@@ -357,8 +361,9 @@
 
   (define Quantified
     (Quantifier-prefixes Ponctuation-infix Quantified)
-    (Quantifier-fenced Quantified)
     (Quantifier-fenced Space-infix Quantified)
+    (Quantifier-fenced Quantified)
+    Quantifier-fenced
     Implication)
 
   (define Implication
@@ -486,7 +491,11 @@
     (+ (or (- "a" "z") (- "A" "Z"))))
 
   (define Number
-    ((+ (- "0" "9")) (or ((or "." "<comma>") (+ (- "0" "9"))) ""))))
+    ((+ (- "0" "9")) (or "." "<comma>") (+ (- "0" "9")))
+    ((+ (- "0" "9")) (or "." "<comma>"))
+    ((or "." "<comma>") (+ (- "0" "9")))
+    (+ (- "0" "9"))
+    (or "." "<comma>")))
 
 (define-language std-math
   (:synopsis "default semantics for mathematical formulas")

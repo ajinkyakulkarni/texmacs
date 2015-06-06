@@ -156,7 +156,9 @@
 
   <drd-props|suppressed|arity|1|accessible|none>
 
-  <assign|tiny-box|<macro|<tiny|\<Box\>>>>
+  <assign|tiny-box|<macro|<tiny|<with|font|roman|math-font|roman|<move|\<Box\>||0.05ex>>>>>
+
+  <assign|explicit-space|<macro|<syntax|\<short-underscore\>| >>>
 
   <\active*>
     <\src-comment>

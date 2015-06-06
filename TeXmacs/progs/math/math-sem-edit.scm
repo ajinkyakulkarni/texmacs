@@ -31,6 +31,10 @@
 (define (quantifier? s)
   (and (string? s) (== (math-symbol-group s) "Quantifier-symbol")))
 
+(define (space? t)
+  (or (in? t '(" " "<space>" "<nospace>"))
+      (tm-in? t '(application-space))))
+
 (define (suppressed-before?)
   (tm-is? (before-cursor) 'suppressed))
 
@@ -46,16 +50,21 @@
 
 (define (infix? t)
   (cond ((tm-atomic? t)
-         (in? (math-symbol-type (tm->string t))
-              (list "infix" "separator")))
+         (and (== (tmstring-length (tm->string t)) 1)
+              (in? (math-symbol-type (tm->string t))
+                   (list "infix" "separator"))))
         ((tm-func? t 'concat)
          (list-and (map var-infix? (tm-children t))))
+        ((tm-in? t '(wide neg))
+         (infix? (tm-ref t 0)))
         (else #f)))
 
 (define (get-infix-op t)
   (cond ((tm-atomic? t) t)
         ((tm-func? t 'concat)
          (list-or (map get-infix-op (tm-children t))))
+        ((tm-in? t '(wide neg))
+         (get-infix-op (tm-ref t 0)))
         (else #f)))
 
 (define (before-actual-infix?)
@@ -67,7 +76,8 @@
               (last (cAr cp))
               (ct (cursor-tree*))
               (ct-len (string-length (tree->string ct))))
-         (or (and (> last 0) (< (+ last op-len) ct-len))
+         (or (and (tm-equal? ct op) (not (tm-func? (tree-up ct) 'concat)))
+             (and (> last 0) (< (+ last op-len) ct-len))
              (let* ((pt (tree-up ct))
                     (i (cAr (cDr cp)))
                     (n (tree-arity pt)))
@@ -84,7 +94,8 @@
               (last (cAr cp))
               (ct (cursor-tree))
               (ct-len (string-length (tree->string ct))))
-         (or (and (> last op-len) (< last ct-len))
+         (or (and (tm-equal? ct op) (not (tm-func? (tree-up ct) 'concat)))
+             (and (> last op-len) (< last ct-len))
              (let* ((pt (tree-up ct))
                     (i (cAr (cDr cp)))
                     (n (tree-arity pt)))
@@ -110,6 +121,18 @@
 (define (in-math-mode?)
   (path-in-math? (cDr (cursor-path))))
 
+(define (session-math? t)
+  (tree-in? t '(input-math folded-io-math unfolded-io-math)))
+
+(define (displayed-math? t)
+  (tree-in? t '(equation equation*)))
+
+(define (get-math-type t)
+  (cond ((tree-search-upwards t session-math?) "Strict")
+        ((tree-search-upwards t 'cell) "Cell")
+        ((tree-search-upwards t displayed-math?) "Main")
+        (else "Strict")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check syntactic correctness
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -121,10 +144,12 @@
 	     (t (path->tree p)))
 	(or (tm-func? t 'cell)
 	    (not (tree-in-math? t))
-	    (and (or (tm-in? t '(lsub lsup rsub rsup))
-		     (tree-func? (tree-up t) 'concat)
-		     (with ok? (packrat-correct? "std-math" "Main" t)
+	    (and (or (tm-in? t '(lsub lsup rsub rsup))                     
+		     (tm-in? (tree-up t) '(concat around around*))
+                     (let* ((type (get-math-type t))
+                            (ok? (packrat-correct? "std-math" type t)))
 		       ;;(display* t ", " ok? "\n")
+		       ;;(display* (tm->stree t) ", " type ", " ok? "\n")
 		       ok?))
 		 (!= p (buffer-path))
 		 (math-correct? (cDr p)))))))
@@ -143,12 +168,6 @@
 (define-macro (try-correct . l)
   (try-correct-rewrite l))
 
-(define-macro (wrap-inserter fun)
-  `(tm-define (,fun . l)
-     (:require (in-sem-math?))
-     (with cmd (lambda () (apply former l))
-       (wrap-insert cmd))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Wrapped insertions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -166,7 +185,10 @@
     (tree-cut (after-cursor))))
 
 (define (add-suppressed-arg t)
-  (when (tm-equal? t "")
+  (when (and (tm-equal? t "")
+             (not (or (tm-is? (tree-up t) 'cell)
+                      (and (tm-is? (tree-up t) 'document)
+                           (tm-is? (tree-up (tree-up t)) 'cell)))))
     (tree-set! t '(suppressed (tiny-box))))
   (when (tm-in? t '(table row cell))
     (for-each add-suppressed-arg (tree-children t))))
@@ -195,26 +217,32 @@
 
 (define (perform-insert cmd)
   (try-correct
-    ((remove-suppressed)
+    (;; regular insertion of new content
+     (remove-suppressed)
      (cmd)
      (add-suppressed))
-    ((when (tm-func? (before-cursor) 'suppressed)
+    (;; starting right script or prime after a suppressed symbol
+     (when (tm-func? (before-cursor) 'suppressed)
        (tree-go-to (before-cursor) 0))
      (cmd)
      (add-suppressed))
-    ((cmd)
-     (add-suppressed))
-    ((insert '(suppressed (tiny-box)))
+    (;; inserting a pure infix operator after a suppressed symbol
      (cmd)
      (add-suppressed))
-    ((remove-suppressed)
+    (;; adding an infix operator after another one
+     (insert '(suppressed (tiny-box)))
+     (cmd)
+     (add-suppressed))
+    (;; starting a long arrow with a script
+     (remove-suppressed)
      (cmd)
      (and (tree-is? (tree-up (cursor-tree)) 'long-arrow)
           (begin
             (with-cursor (append (cDDr (cursor-path)) (list 1))
               (insert '(suppressed (tiny-box))))
             (add-suppressed))))
-    ((remove-suppressed)
+    (;; entering a quantifier together with the corresponding variable
+     (remove-suppressed)
      (with s (before-cursor)
        (and (quantifier? s)
             (begin
@@ -223,20 +251,67 @@
                      (ins `(concat ,sep (tiny-box))))
                 (insert `(suppressed ,ins) :start)
                 #t)))))
-    ((remove-suppressed)
+    (;; entering a quantifier
+     (remove-suppressed)
      (cmd)
      (with s (before-cursor)
        (and (quantifier? s)
             (let* ((sep (if (== s "mathlambda") "<point>" ","))
                    (ins `(concat (tiny-box) ,sep (tiny-box))))
               (insert `(suppressed ,ins) :start)
-              #t))))))
+              #t))))
+    (;; add character before single infix operator
+     (remove-suppressed)
+     (let* ((s (after-cursor))
+            (t (cursor-tree)))
+       (and (infix? s)
+            (infix? t)
+            (begin
+              (with-cursor (tree->path t :end)
+                (insert `(suppressed (tiny-box))))
+              (cmd)
+              #t))))
+    (;; add Greek symbol after other Greek symbol
+     (remove-suppressed)
+     (insert `(suppressed (explicit-space)))
+     (cmd)
+     (add-suppressed))
+    (;; add Greek symbol before other Greek symbol
+     (remove-suppressed)
+     (insert-go-to `(suppressed (explicit-space)) '(0))
+     (cmd)
+     (add-suppressed))
+    (;; add content in the middle of an operator
+     (with spc `(suppressed (explicit-space))
+       (remove-suppressed)
+       (insert-go-to `(concat ,spc ,spc) '(0 1))
+       (cmd)
+       (add-suppressed)))))
+
+(define (insert-with-selection cmd)
+  (let* ((t (selection-tree)))
+    (try-correct
+      ((and (not (suppressed-around?))
+            (begin
+              (cmd)
+              (add-suppressed))))
+      ((kbd-backspace)
+       (perform-insert cmd)
+       (and (math-correct?)
+            (with ins (lambda () (insert t))
+              (perform-insert ins)))))))
 
 (define (wrap-insert cmd)
   (clean-suppressed)
-  (if (not (math-correct?))
-      (cmd)
-      (perform-insert cmd)))
+  (cond ((not (math-correct?)) (cmd))
+        ((selection-active-any?) (insert-with-selection cmd))
+        (else (perform-insert cmd))))
+
+(define-macro (wrap-inserter fun)
+  `(tm-define (,fun . l)
+     (:require (in-sem-math?))
+     (with cmd (lambda () (apply former l))
+       (wrap-insert cmd))))
 
 (tm-define (kbd-insert s)
   (:require (in-sem-math?))
@@ -258,7 +333,8 @@
 
 (define (perform-remove cmd forwards?)
   (try-correct
-    ((and (suppressed-around?)
+    (;; removal when there is suppressed content around the cursor
+     (and (suppressed-around?)
           (begin
             (remove-suppressed)
             (with empty? (tree-empty? (cursor-tree))
@@ -266,7 +342,8 @@
               (when (not (and empty? (math-correct?)))
                 (remove-suppressed))
               (add-suppressed)))))
-    ((remove-suppressed)
+    (;; regular removal of content
+     (remove-suppressed)
      (with empty? (tree-empty? (cursor-tree))
        (cmd)
        (if (and empty? (math-correct?))
@@ -275,15 +352,28 @@
                 (begin
                   (remove-suppressed)
                   (add-suppressed))))))
-    ((remove-suppressed)
+    (;; removal of actual infix operators
+     (remove-suppressed)
      (let* ((st (if forwards? (after-cursor) (before-cursor)))
             (inf? (if forwards? (before-actual-infix?) (after-actual-infix?))))
+       (when (== st "*") (set! st "<cdot>"))
        (cmd)
        (when inf? (insert `(suppressed ,st) (if forwards? :end :start)))
        (add-suppressed)))
-    ((position-wrt-suppressed forwards?)
+    (;; need to jump over suppressed content around the cursor before deletion
+     ;; e.g. pressing backspace after suppressed content in
+     ;; \sum_{k \in K} <suppressed> \circ C
+     (position-wrt-suppressed forwards?)
      (cmd)
-     (add-suppressed))))
+     (add-suppressed))
+    (;; removal of actual infix spaces
+     (remove-suppressed)
+     (let* ((st (if forwards? (after-cursor) (before-cursor)))
+            (spc? (space? st)))
+       (cmd)
+       (when spc?
+         (insert `(suppressed (explicit-space)) (if forwards? :end :start)))
+       (add-suppressed)))))
 
 (define (remove-selection cmd forwards?)
   (let* ((t (selection-tree)))
@@ -291,6 +381,7 @@
     (try-correct
       ((and (infix? t)
             (with op (get-infix-op t)
+              (when (== op "*") (set! op "<cdot>"))
               (insert `(suppressed ,op) (if forwards? :end :start))
               (add-suppressed))))
       ((add-suppressed)))))
@@ -300,6 +391,12 @@
   (cond ((not (math-correct?)) (cmd))
         ((selection-active-any?) (remove-selection cmd forwards?))
         (else (perform-remove cmd forwards?))))
+
+(define-macro (wrap-remover fun forwards?)
+  `(tm-define (,fun . l)
+     (:require (in-sem-math?))
+     (with cmd (lambda () (apply former l))
+       (wrap-remove cmd ,forwards?))))
 
 (tm-define (kbd-backspace)
   (:require (in-sem-math?))
@@ -358,6 +455,9 @@
 (wrap-inserter structured-insert-top)
 (wrap-inserter structured-insert-bottom)
 
+(wrap-remover clipboard-cut #f)
+(wrap-inserter clipboard-paste)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Hybrid commands
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -365,6 +465,23 @@
 (wrap-inserter make-hybrid)
 
 (tm-define (kbd-enter t forwards?)
-  (:require (and (tree-is? t 'hybrid) (tree-in-math? t)))
+  (:require (and (tree-is? t 'hybrid) (in-sem?) (tree-in-math? t)))
   (with cmd (lambda () (activate-hybrid #f))
     (perform-insert cmd)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Further tweaking
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (kbd-space-ok?)
+  (let* ((b (skip-decorations-leftwards (before-cursor)))
+	 (p (get-preference "math spacebar")))
+    (or (== p "allow spurious spaces") (allow-space-after? b))))
+
+(tm-define (kbd-space)
+  (:require (in-sem-math?))
+  (when (kbd-space-ok?) (former)))
+
+(tm-define (kbd-shift-space)
+  (:require (in-sem-math?))
+  (when (kbd-space-ok?) (former)))
