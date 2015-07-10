@@ -97,16 +97,17 @@
 
 (define (get-full-name user)
  (if (os-mingw?)
-   (or (and (url-exists-in-path? "fullname") (var-eval-system (string-append "fullname " user))) "DefaultUser")
-   (passwd:gecos (getpwnam user))))
+     (or (and (url-exists-in-path? "fullname")
+              (var-eval-system (string-append "fullname " user)))
+         "Default User")
+     (passwd:gecos (getpwnam user))))
 
 (define (create-default-user)
-  (let* ((pseudo (getlogin))
-         (pseudo (if (== pseudo #f) (passwd:name (getpwuid (getuid))) pseudo ))
+  (let* ((pseudo (or (getlogin) (passwd:name (getpwuid (getuid)))))
          (name (get-full-name pseudo)))
-         (when (== pseudo "") (set! pseudo "default"))
-         (when (== name "") (set! name "Default User"))
-        (list pseudo name)))
+    (when (== pseudo "") (set! pseudo "default"))
+    (when (== name "") (set! name "Default User"))
+    (list pseudo name)))
 
 (tm-define (get-default-user)
   (when (not db-the-default-user)
@@ -115,12 +116,9 @@
   (when (not db-the-default-user)
     (with info (create-default-user)
       (with (pseudo name) info
-        (when (and (!= pseudo "default") (!= name "Default User"))
-          (with me (add-user pseudo name)
-            (set-default-user me)
-            (set! db-the-default-user me))))))
-  (when (not db-the-default-user)
-    (set! db-the-default-user "default"))
+	(with me (add-user pseudo name)
+	  (set-default-user me)
+	  (set! db-the-default-user me)))))
   db-the-default-user)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
