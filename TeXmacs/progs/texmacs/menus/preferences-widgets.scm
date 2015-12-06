@@ -50,11 +50,7 @@
             "18em"))
     (item (text "User interface language:")
       (enum (set-pretty-preference "language" answer)
-            '("British" "Bulgarian" "Chinese" "Croatian" "Czech"
-              "Dutch" "Danish" "English" "Finnish" "French" "German"
-              "Hungarian" "Italian" "Japanese" "Korean" "Polish"
-              "Portuguese" "Romanian" "Russian" "Slovene"
-              "Spanish" "Swedish" "Taiwanese" "Ukrainian")
+            (map upcase-first supported-languages)
             (get-pretty-preference "language")
             "18em"))
     (item (text "Complex actions:")
@@ -470,7 +466,10 @@
               (get-boolean-preference "native postscript")))
     (meti (hlist // (text "Expand beamer slides"))
       (toggle (set-boolean-preference "texmacs->pdf:expand slides" answer)
-              (get-boolean-preference "texmacs->pdf:expand slides")))))
+              (get-boolean-preference "texmacs->pdf:expand slides")))
+    (meti (hlist // (text "Check exported files for correctness"))
+      (toggle (set-boolean-preference "texmacs->pdf:check" answer)
+              (get-boolean-preference "texmacs->pdf:check")))))
 
 ;; Images ----------
 

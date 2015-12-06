@@ -175,6 +175,7 @@ initialize_default_env () {
   env (TABLE_BBORDER)    = "0ln";       // bottom table border width
   env (TABLE_TBORDER)    = "0ln";       // top table border width
   env (TABLE_HYPHEN)     = "n";         // vertical hyphenation
+  env (TABLE_BLOCK)      = "no";        // consider table as block content
   env (TABLE_MIN_ROWS)   = "";          // suggested minimal number of rows
   env (TABLE_MIN_COLS)   = "";          // suggested minimal number of columns
   env (TABLE_MAX_ROWS)   = "";          // suggested maximal number of rows
@@ -192,10 +193,10 @@ initialize_default_env () {
   env (CELL_VMODE)       = "auto";      // height determination mode
   env (CELL_HALIGN)      = "l";         // horizontal alignment
   env (CELL_VALIGN)      = "B";         // vertical alignment
-  env (CELL_LSEP)        = "0fn";       // left cell padding
-  env (CELL_RSEP)        = "0fn";       // right cell padding
-  env (CELL_BSEP)        = "0fn";       // bottom cell padding
-  env (CELL_TSEP)        = "0fn";       // top cell padding
+  env (CELL_LSEP)        = "1spc";      // left cell padding
+  env (CELL_RSEP)        = "1spc";      // right cell padding
+  env (CELL_BSEP)        = "1sep";      // bottom cell padding
+  env (CELL_TSEP)        = "1sep";      // top cell padding
   env (CELL_LBORDER)     = "0ln";       // left cell border width
   env (CELL_RBORDER)     = "0ln";       // right cell border width
   env (CELL_BBORDER)     = "0ln";       // bottom cell border width

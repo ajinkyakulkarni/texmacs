@@ -1,13 +1,19 @@
-<TeXmacs|1.99.2>
+<TeXmacs|1.99.3>
 
 <style|<tuple|tmdoc|english>>
 
 <\body>
   <tmdoc-title|<TeXmacs> changelog>
 
-  <section|Changes from version 1.99.1 to 1.99.3>
+  <section|Changes from version 1.99.1 to 1.99.4>
 
   <\itemize>
+    <item>Various bug fixes (1.99.4).
+
+    <item>Various improvements for the table editor (1.99.4).
+
+    <item>Greek language support, with the help of Alkis Akritas (1.99.4).
+
     <item>Experimental math editing mode that enforces syntactic correctness
     (1.99.3).
 

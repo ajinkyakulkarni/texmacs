@@ -1054,19 +1054,17 @@ pdf_hummus_renderer_rep::draw_glyphs()
   }
 }
 
-
-
-static double font_size (string name) {
-    int pos= search_forwards (".", name);
-    int szpos= pos-1;
-    while ((szpos>0) && is_numeric (name[szpos-1])) szpos--;
-    double size= as_double (name (szpos, pos));
-    if (size == 0) size= 10;
-    double dpi= as_double (name (pos+1, N(name)-2));
-    double mag= (size) * (dpi/72.0);
-    return mag;
+static double
+font_size (string name) {
+  int pos= search_backwards (".", name);
+  int szpos= pos-1;
+  while ((szpos>0) && is_numeric (name[szpos-1])) szpos--;
+  double size= as_double (name (szpos, pos));
+  if (size == 0) size= 10;
+  double dpi= as_double (name (pos+1, N(name)-2));
+  double mag= (size) * (dpi/72.0);
+  return mag;
 }
-
 
 void
 pdf_hummus_renderer_rep::draw (int ch, font_glyphs fn, SI x, SI y) {
@@ -1083,9 +1081,10 @@ pdf_hummus_renderer_rep::draw (int ch, font_glyphs fn, SI x, SI y) {
         starts (fontname, "eur") ||
         starts (fontname, "eus") ||
         starts (fontname, "msam") ||
-        starts (fontname, "msbm"))
+        starts (fontname, "msbm")) {
       draw (161, fn, x, y);
-    return;
+      return;
+    }
   }
   string char_name (fontname * "-" * as_string ((int) ch));
   pdf_raw_image glyph;
@@ -1330,11 +1329,11 @@ pdf_image_rep::flush (PDFWriter& pdfw)
 			// note that we have to return since flush_raster
 			// already build the appopriate Form XObject into the PDF
 
-
 			if ((s == "jpg") || (s == "jpeg"))
 				if (flush_jpg(pdfw, name)) return;
 
-			if (flush_raster (pdfw, name)) return;
+			if (!(s == "png" && exists_in_path ("convert")))
+			  if (flush_raster (pdfw, name)) return;
 
 			// if this fails try using convert from ImageMagik
 			// to convert to pdf

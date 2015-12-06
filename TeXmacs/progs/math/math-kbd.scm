@@ -44,6 +44,12 @@
     ("dagger var var var" (make 'bmatrix))
     ("dagger var var var var" (make 'choice))
     ("dagger var var var var var" (make 'stack))
+    ("\xfe" (make 'tabular*)) ;; Alt-t
+    ("\xfe var" (make 'matrix))
+    ("\xfe var var" (make 'det))
+    ("\xfe var var var" (make 'bmatrix))
+    ("\xfe var var var var" (make 'choice))
+    ("\xfe var var var var var" (make 'stack))
     ("lozenge" (make-wide "<vect>")) ;; Alt-V
 
     ("geq" (make-wide "<dot>")) ;; Alt-.
@@ -61,7 +67,11 @@
     ("{ dagger" (make 'choice)) ;; { Alt-t
     ("( dagger" (make 'matrix))
     ("[ dagger" (make 'bmatrix))
-    ("| dagger" (make 'det))))
+    ("| dagger" (make 'det))
+    ("{ \xfe" (make 'choice)) ;; { Alt-t
+    ("( \xfe" (make 'matrix))
+    ("[ \xfe" (make 'bmatrix))
+    ("| \xfe" (make 'det))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Main keyboard shortcuts
@@ -227,6 +237,7 @@
 
   ("table N c" (make 'choice))
   ("table N m" (make 'matrix))
+  ("table N M" (make 'bmatrix))
   ("table N d" (make 'det))
   ("table N s" (make 'stack))
   ("{ math t" (make 'choice))
@@ -1831,3 +1842,18 @@
   ("X var" "<Xi>")
   ("Y var" "<Psi>")
   ("Z var" "<Zeta>"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Hacks to work around the problem that MacOS reserves Alt-based shortcuts
+;; for its own personal use
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(when (os-macos?)
+  (kbd-map
+    (:mode in-math?)
+    ("table N T" (make 'tabular*))
+    ("table N c" (make 'choice))
+    ("table N m" (make 'matrix))
+    ("table N M" (make 'bmatrix))
+    ("table N d" (make 'det))
+    ("table N s" (make 'stack))))

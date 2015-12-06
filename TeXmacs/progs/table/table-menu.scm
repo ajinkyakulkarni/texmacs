@@ -31,8 +31,12 @@
   (if (and (style-has? "calc-dtd") (calc-ready?))
       (link calc-table-menu)
       ---)
+  (if (not (in-math?))
+      ("Wide tabular" (make 'wide-tabular)))
   ("Plain tabular" (make 'tabular))
   ("Centered tabular" (make 'tabular*))
+  (if (not (in-math?))
+      ("Wide block" (make 'wide-block)))
   ("Plain block" (make 'block))
   ("Centered block" (make 'block*))
   (if (and (style-has? "std-dtd") (in-math?))
@@ -105,8 +109,8 @@
 
 (menu-bind table-special-menu
   ("Table breaking" (toggle-table-hyphen))
-  ("Deactivate" (table-deactivate))
-  ("Extract format" (table-extract-format)))
+  ;;("Deactivate" (table-deactivate))
+  ("Create table macro" (create-table-macro "")))
 
 (menu-bind cell-mode-menu
   ("Cells" (set-cell-mode "cell"))
@@ -118,49 +122,113 @@
   ("Left" (cell-set-halign "l"))
   ("Center" (cell-set-halign "c"))
   ("Right" (cell-set-halign "r"))
-  (-> "Baseline"
-      ("Left" (cell-set-halign "L"))
-      ("Center" (cell-set-halign "C"))
-      ("Right" (cell-set-halign "R")))
-  (-> "Decimal dot"
-      ("Left" (cell-set-halign "L."))
-      ("Center" (cell-set-halign "C."))
-      ("Right" (cell-set-halign "R.")))
-  (-> "Decimal comma"
-      ("Left" (cell-set-halign "L,"))
-      ("Center" (cell-set-halign "C,"))
-      ("Right" (cell-set-halign "R,"))))
+  ;;(-> "Baseline"
+  ;;    ("Left" (cell-set-halign "L"))
+  ;;    ("Center" (cell-set-halign "C"))
+  ;;    ("Right" (cell-set-halign "R")))
+  ;;(-> "Decimal dot"
+  ;;    ("Left" (cell-set-halign "L."))
+  ;;    ("Center" (cell-set-halign "C."))
+  ;;    ("Right" (cell-set-halign "R.")))
+  ;;(-> "Decimal comma"
+  ;;    ("Left" (cell-set-halign "L,"))
+  ;;    ("Center" (cell-set-halign "C,"))
+  ;;    ("Right" (cell-set-halign "R,")))
+  ("Decimal dot" (cell-set-halign "L."))
+  ("Decimal comma" (cell-set-halign "L,")))
 
 (menu-bind cell-valign-menu
   ("Bottom" (cell-set-valign "b"))
   ("Center" (cell-set-valign "c"))
   ("Top" (cell-set-valign "t"))
-  (-> "Baseline"
-      ("Bottom" (cell-set-valign "B"))
-      ("Center" (cell-set-valign "C"))
-      ("Top" (cell-set-valign "T"))))
+  ;;(-> "Baseline"
+  ;;    ("Bottom" (cell-set-valign "B"))
+  ;;    ("Center" (cell-set-valign "C"))
+  ;;    ("Top" (cell-set-valign "T")))
+  ("Baseline" (cell-set-valign "B")))
 
 (menu-bind cell-width-menu
   ("Automatic" (cell-set-automatic-width))
   ("Exact" (cell-ia-exact-width))
   ("Minimal" (cell-ia-minimal-width))
-  ("Maximal" (cell-ia-maximal-width)))
+  ("Maximal" (cell-ia-maximal-width))
+  ("Stretch factor" (cell-interactive-set "cell-hpart")))
 
 (menu-bind cell-height-menu
   ("Automatic" (cell-set-automatic-height))
   ("Exact" (cell-ia-exact-height))
   ("Minimal" (cell-ia-minimal-height))
-  ("Maximal" (cell-ia-maximal-height)))
+  ("Maximal" (cell-ia-maximal-height))
+  ("Stretch factor" (cell-interactive-set "cell-vpart"))
+  (-> "Adjust limits"
+      ("None" (cell-set-vcorrect "n"))
+      ("Bottom" (cell-set-vcorrect "b"))
+      ("Top" (cell-set-vcorrect "t"))
+      ("Both" (cell-set-vcorrect "a"))))
+
+(menu-bind cell-border-icons-menu
+  ((icon "tm_border_none.xpm")
+   (cell-set-borders "0ln" "0ln" "0ln" "0ln" #f #f #f #f))
+  ((icon "tm_border_l.xpm")
+   (cell-set-borders "0ln" "0ln" "1ln" "0ln" #f #f #f #f))
+  ((icon "tm_border_r.xpm")
+   (cell-set-borders "0ln" "0ln" "0ln" "1ln" #f #f #f #f))
+  ((icon "tm_border_lr.xpm")
+   (cell-set-borders "0ln" "0ln" "1ln" "1ln" #f #f #f #f))
+  ((icon "tm_border_t.xpm")
+   (cell-set-borders "1ln" "0ln" "0ln" "0ln" #f #f #f #f))
+  ((icon "tm_border_lt.xpm")
+   (cell-set-borders "1ln" "0ln" "1ln" "0ln" #f #f #f #f))
+  ((icon "tm_border_rt.xpm")
+   (cell-set-borders "1ln" "0ln" "0ln" "1ln" #f #f #f #f))
+  ((icon "tm_border_lrt.xpm")
+   (cell-set-borders "1ln" "0ln" "1ln" "1ln" #f #f #f #f))
+  ((icon "tm_border_b.xpm")
+   (cell-set-borders "0ln" "1ln" "0ln" "0ln" #f #f #f #f))
+  ((icon "tm_border_lb.xpm")
+   (cell-set-borders "0ln" "1ln" "1ln" "0ln" #f #f #f #f))
+  ((icon "tm_border_rb.xpm")
+   (cell-set-borders "0ln" "1ln" "0ln" "1ln" #f #f #f #f))
+  ((icon "tm_border_lrb.xpm")
+   (cell-set-borders "0ln" "1ln" "1ln" "1ln" #f #f #f #f))
+  ((icon "tm_border_tb.xpm")
+   (cell-set-borders "1ln" "1ln" "0ln" "0ln" #f #f #f #f))
+  ((icon "tm_border_ltb.xpm")
+   (cell-set-borders "1ln" "1ln" "1ln" "0ln" #f #f #f #f))
+  ((icon "tm_border_rtb.xpm")
+   (cell-set-borders "1ln" "1ln" "0ln" "1ln" #f #f #f #f))
+  ((icon "tm_border_lrtb.xpm")
+   (cell-set-borders "1ln" "1ln" "1ln" "1ln" #f #f #f #f)))
+
+(menu-bind cell-borders-icons-menu
+  ((icon "tm_both_none.xpm")
+   (cell-set-borders "0ln" "0ln" "0ln" "0ln" "0ln" "0ln" "0ln" "0ln"))
+  ((icon "tm_both_h.xpm")
+   (cell-set-borders "0ln" "0ln" "1ln" "1ln" "0ln" "0ln" "1ln" "1ln"))
+  ((icon "tm_both_v.xpm")
+   (cell-set-borders "1ln" "1ln" "0ln" "0ln" "1ln" "1ln" "0ln" "0ln"))
+  ((icon "tm_both_hv.xpm")
+   (cell-set-borders "1ln" "1ln" "1ln" "1ln" "1ln" "1ln" "1ln" "1ln")))
 
 (menu-bind cell-border-menu
   ("All" (interactive cell-set-border))
-  ("Left" (cell-interactive-set "cell-lborder"))
-  ("Right" (cell-interactive-set "cell-rborder"))
-  ("Bottom" (cell-interactive-set "cell-bborder"))
-  ("Top" (cell-interactive-set "cell-tborder")))
+  ("Horizontal" (interactive cell-set-hborder))
+  ("Vertical" (interactive cell-set-vborder))
+  ("Left" (interactive cell-set-lborder))
+  ("Right" (interactive cell-set-rborder))
+  ("Bottom" (interactive cell-set-bborder))
+  ("Top" (interactive cell-set-tborder)))
+
+(menu-bind cell-alt-border-menu
+  (tile 4 (link cell-border-icons-menu))
+  (if (selection-active-table?)
+      ---
+      (tile 4 (link cell-borders-icons-menu))))
 
 (menu-bind cell-padding-menu
   ("All" (interactive cell-set-padding))
+  ("Horizontal" (interactive cell-set-hpadding))
+  ("Vertical" (interactive cell-set-vpadding))
   ("Left" (cell-interactive-set "cell-lsep"))
   ("Right" (cell-interactive-set "cell-rsep"))
   ("Bottom" (cell-interactive-set "cell-bsep"))
@@ -176,39 +244,27 @@
               (lambda (col) (cell-set-background col)) '()))
   ("Other" (interactive cell-set-background)))
 
-(menu-bind cell-special-menu
-  (when (== (get-cell-mode) "cell")
-    ("Insert subtable" (make-subtable)))
+(menu-bind cell-wrapping-menu
+  ("Off" (cell-set-hyphen "n"))
   ---
-  (when (== (get-cell-mode) "cell")
-    (-> "Cell span"
-        (when (selection-active-table?)
-	  ("Join selected cells" (cell-set-span-selection)))
-        (when (cell-spans-more?)
-	  ("Undo cell join" (cell-reset-span)))
-        ("Horizontal" (interactive cell-set-column-span))
-        ("Vertical" (interactive cell-set-row-span))))
-  (-> "Text height correction"
-      ("Off" (cell-set-vcorrect "n"))
-      ---
-      ("Bottom" (cell-set-vcorrect "b"))
-      ("Top" (cell-set-vcorrect "t"))
-      ("Both" (cell-set-vcorrect "a")))
-  (-> "Line wrapping"
-      ("Off" (cell-set-hyphen "n"))
-      ---
-      ("Top" (cell-set-hyphen "t"))
-      ("Center" (cell-set-hyphen "c"))
-      ("Bottom" (cell-set-hyphen "b")))
-  (-> "Block content"
-      ("Never" (cell-set-block "no"))
-      ("When line wrapping" (cell-set-block "auto"))
-      ("Always" (cell-set-block "yes")))
-  (-> "Distribute unused space"
-      ("Horizontal part" (cell-interactive-set "cell-hpart"))
-      ("Vertical part" (cell-interactive-set "cell-vpart")))
-  ;;(-> "Glue decorations" (tile 2 (link cell-decoration-icons)))
-  )
+  ("Top" (cell-set-hyphen "t"))
+  ("Center" (cell-set-hyphen "c"))
+  ("Bottom" (cell-set-hyphen "b")))
+
+(menu-bind cell-block-menu
+  ("Never" (cell-set-block "no"))
+  ("When line wrapping" (cell-set-block "auto"))
+  ("Always" (cell-set-block "yes")))
+
+(menu-bind cell-split-join-menu
+  (when (and (== (get-cell-mode) "cell")
+	     (not (selection-active-table?)))
+    ("Insert subtable" (make-subtable)))
+  (when (selection-active-table?)
+    ("Join selected cells" (cell-set-span-selection)))
+  (when (and (== (get-cell-mode) "cell")
+	     (cell-spans-more?))
+    ("Dissociate joined cells" (cell-reset-span))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Main Table menu
@@ -242,13 +298,16 @@
   ;;---
   (-> "Width" (link cell-width-menu))
   (-> "Height" (link cell-height-menu))
-  (-> "Border" (link cell-border-menu))
+  (-> "Border" (link cell-alt-border-menu))
   (-> "Padding" (link cell-padding-menu))
   (-> "Horizontal alignment" (link cell-halign-menu))
   (-> "Vertical alignment" (link cell-valign-menu))
   (-> "Background color" (link cell-color-menu))
   ;;---
-  (-> "Special" (link cell-special-menu)))
+  (-> "Line wrapping" (link cell-wrapping-menu))
+  (-> "Block content" (link cell-block-menu))
+  ---
+  (link cell-split-join-menu))
 
 (menu-bind vertical-table-cell-menu
   (=> "Table" (link table-menu))
@@ -455,7 +514,19 @@
               "v" (table-test-parwidth?))
        (table-toggle-parwidth)))
   (=> (balloon (icon "tm_set_properties.xpm") "Table properties")
-      (mini #f (link table-menu))))
+      (mini #f
+	(link table-menu)
+	---
+	("Table properties" (open-table-properties)))))
+
+(define (cell-halign-icon)
+  (with h (cell-get-format "cell-halign")
+    (cond ((== h "l") "tm_cell_left.xpm")
+	  ((== h "c") "tm_cell_center.xpm")
+	  ((== h "r") "tm_cell_right.xpm")
+	  ((== h "L.") "tm_cell_dot.xpm")
+	  ((== h "L,") "tm_cell_dot.xpm")
+	  (else "tm_cell_left.xpm"))))
 
 (tm-menu (focus-extra-icons t)
   (:require (table-markup-context? t))
@@ -464,20 +535,28 @@
     (if (== (get-cell-mode) "cell")
         (=> (balloon "Cell" "Change cell operation mode")
             (mini #f
-              (link cell-mode-icons))))
+              (link cell-mode-icons)
+	      ---
+	      ("Cell properties" (open-cell-properties)))))
     (if (== (get-cell-mode) "row")
         (=> (balloon "Row" "Change cell operation mode")
             (mini #f
-              (link cell-mode-icons))))
+              (link cell-mode-icons)
+	      ---
+	      ("Cell properties" (open-cell-properties)))))
     (if (== (get-cell-mode) "column")
         (=> (balloon "Column" "Change cell operation mode")
             (mini #f
-              (link cell-mode-icons))))
+              (link cell-mode-icons)
+	      ---
+	      ("Cell properties" (open-cell-properties)))))
     (if (== (get-cell-mode) "table")
         (=> (balloon "All cells" "Change cell operation mode")
             (mini #f
-              (link cell-mode-icons))))
-    (=> (balloon (icon "tm_cell_size.xpm") "Modify cell size")
+              (link cell-mode-icons)
+	      ---
+	      ("Cell properties" (open-cell-properties)))))
+    (=> (balloon (icon "tm_cell_size_var.xpm") "Modify cell size")
         (mini #f
           (group "Width")
           (link cell-width-menu)
@@ -487,11 +566,11 @@
     (=> (balloon (icon "tm_cell_border.xpm") "Change border of cell")
         (mini #f
           (group "Border")
-          (link cell-border-menu)
+          (link cell-alt-border-menu)
           ---
           (group "Padding")
           (link cell-padding-menu)))
-    (=> (balloon (icon "tm_cell_pos.xpm") "Modify cell alignment")
+    (=> (balloon (icon (eval (cell-halign-icon))) "Modify cell alignment")
         (mini #f
           (group "Horizontal alignment")
           (link cell-halign-menu)
@@ -505,7 +584,21 @@
     ((check (balloon (icon "tm_cell_wrap.xpm") "Line wrapping inside cell")
             "v" (cell-test-wrap?))
      (cell-toggle-wrap))
-    (=> (balloon (icon "tm_cell_special.xpm")
-                 "Special cell properties and actions")
-        (mini #f
-          (link  cell-special-menu)))))
+    (if (and (not (cell-spans-more?))
+	     (not (selection-active-table?))
+	     (> (* (table-nr-rows) (table-nr-columns)) 1))
+	((balloon (icon "tm_cell_subtable.xpm")
+		  "Transform cell into subtable")
+	 (make-subtable)))
+    (if (and (cell-spans-more?)
+	     (not (selection-active-table?)))
+	((balloon (icon "tm_cell_var_subtable.xpm")
+		  "Transform cell into subtable")
+	 (make-subtable))
+	((balloon (icon "tm_cell_split.xpm")
+		  "Dissociate joined cells")
+	 (cell-reset-span)))
+    (if (selection-active-table?)
+	((balloon (icon "tm_cell_join.xpm")
+		  "Join selected cells")
+	 (cell-set-span-selection)))))
