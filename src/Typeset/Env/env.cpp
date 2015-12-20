@@ -38,7 +38,7 @@ edit_env_rep::edit_env_rep (drd_info& drd2,
   local_ref (local_ref2), global_ref (global_ref2),
   local_aux (local_aux2), global_aux (global_aux2),
   local_att (local_att2), global_att (global_att2),
-  missing (UNINIT), redefined ()
+  missing (UNINIT), redefined (), touched (false)
 {
   initialize_default_env ();
   initialize_default_var_type ();
@@ -67,6 +67,7 @@ edit_env_rep::style_init_env () {
   dpi = get_int (DPI);
   inch= ((double) dpi*PIXEL);
   flexibility= get_double (PAGE_FLEXIBILITY);
+  first_page= get_double (PAGE_FIRST);
   back= hashmap<string,tree> (UNINIT);
   update_page_pars ();
 }

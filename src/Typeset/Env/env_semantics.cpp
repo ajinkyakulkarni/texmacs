@@ -83,6 +83,7 @@ initialize_default_var_type () {
   var_type (PAGE_TYPE)          = Env_Fixed;
   var_type (PAGE_BREAKING)      = Env_Fixed;
   var_type (PAGE_FLEXIBILITY)   = Env_Fixed;
+  var_type (PAGE_FIRST)         = Env_Fixed;
   var_type (PAGE_WIDTH)         = Env_Page_Extents;
   var_type (PAGE_HEIGHT)        = Env_Page_Extents;
   var_type (PAGE_WIDTH_MARGIN)  = Env_Page;
@@ -444,6 +445,7 @@ edit_env_rep::update_info_level () {
   else if (s == "short") info_level= INFO_SHORT;
   else if (s == "detailed") info_level= INFO_DETAILED;
   else if (s == "paper") info_level= INFO_PAPER;
+  else if (s == "short-paper") info_level= INFO_SHORT_PAPER;
   else info_level= INFO_MINIMAL;
 }
 
@@ -730,6 +732,9 @@ edit_env_rep::update (string s) {
     update_mode ();
     update_language ();
     update_font ();
+    break;
+  case Env_Info_Level:
+    update_info_level ();
     break;
   case Env_Font:
     update_font ();

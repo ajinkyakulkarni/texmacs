@@ -4718,6 +4718,36 @@ tmg_hexadecimal_2integer (tmscm arg1) {
 }
 
 tmscm
+tmg_cpp_string_tokenize (tmscm arg1, tmscm arg2) {
+  TMSCM_ASSERT_STRING (arg1, TMSCM_ARG1, "cpp-string-tokenize");
+  TMSCM_ASSERT_STRING (arg2, TMSCM_ARG2, "cpp-string-tokenize");
+
+  string in1= tmscm_to_string (arg1);
+  string in2= tmscm_to_string (arg2);
+
+  // TMSCM_DEFER_INTS;
+  array_string out= tokenize (in1, in2);
+  // TMSCM_ALLOW_INTS;
+
+  return array_string_to_tmscm (out);
+}
+
+tmscm
+tmg_cpp_string_recompose (tmscm arg1, tmscm arg2) {
+  TMSCM_ASSERT_ARRAY_STRING (arg1, TMSCM_ARG1, "cpp-string-recompose");
+  TMSCM_ASSERT_STRING (arg2, TMSCM_ARG2, "cpp-string-recompose");
+
+  array_string in1= tmscm_to_array_string (arg1);
+  string in2= tmscm_to_string (arg2);
+
+  // TMSCM_DEFER_INTS;
+  string out= recompose (in1, in2);
+  // TMSCM_ALLOW_INTS;
+
+  return string_to_tmscm (out);
+}
+
+tmscm
 tmg_find_left_bracket (tmscm arg1, tmscm arg2, tmscm arg3) {
   TMSCM_ASSERT_PATH (arg1, TMSCM_ARG1, "find-left-bracket");
   TMSCM_ASSERT_STRING (arg2, TMSCM_ARG2, "find-left-bracket");
@@ -5847,6 +5877,21 @@ tmg_url_rootedP (tmscm arg1) {
 }
 
 tmscm
+tmg_url_rooted_protocolP (tmscm arg1, tmscm arg2) {
+  TMSCM_ASSERT_URL (arg1, TMSCM_ARG1, "url-rooted-protocol?");
+  TMSCM_ASSERT_STRING (arg2, TMSCM_ARG2, "url-rooted-protocol?");
+
+  url in1= tmscm_to_url (arg1);
+  string in2= tmscm_to_string (arg2);
+
+  // TMSCM_DEFER_INTS;
+  bool out= is_rooted (in1, in2);
+  // TMSCM_ALLOW_INTS;
+
+  return bool_to_tmscm (out);
+}
+
+tmscm
 tmg_url_rooted_webP (tmscm arg1) {
   TMSCM_ASSERT_URL (arg1, TMSCM_ARG1, "url-rooted-web?");
 
@@ -5867,6 +5912,21 @@ tmg_url_rooted_tmfsP (tmscm arg1) {
 
   // TMSCM_DEFER_INTS;
   bool out= is_rooted_tmfs (in1);
+  // TMSCM_ALLOW_INTS;
+
+  return bool_to_tmscm (out);
+}
+
+tmscm
+tmg_url_rooted_tmfs_protocolP (tmscm arg1, tmscm arg2) {
+  TMSCM_ASSERT_URL (arg1, TMSCM_ARG1, "url-rooted-tmfs-protocol?");
+  TMSCM_ASSERT_STRING (arg2, TMSCM_ARG2, "url-rooted-tmfs-protocol?");
+
+  url in1= tmscm_to_url (arg1);
+  string in2= tmscm_to_string (arg2);
+
+  // TMSCM_DEFER_INTS;
+  bool out= is_rooted_tmfs (in1, in2);
   // TMSCM_ALLOW_INTS;
 
   return bool_to_tmscm (out);
@@ -5896,6 +5956,19 @@ tmg_url_unroot (tmscm arg1) {
   // TMSCM_ALLOW_INTS;
 
   return url_to_tmscm (out);
+}
+
+tmscm
+tmg_url_atomicP (tmscm arg1) {
+  TMSCM_ASSERT_URL (arg1, TMSCM_ARG1, "url-atomic?");
+
+  url in1= tmscm_to_url (arg1);
+
+  // TMSCM_DEFER_INTS;
+  bool out= is_atomic (in1);
+  // TMSCM_ALLOW_INTS;
+
+  return bool_to_tmscm (out);
 }
 
 tmscm
@@ -8165,6 +8238,19 @@ tmg_buffer_pretend_autosaved (tmscm arg1) {
 }
 
 tmscm
+tmg_buffer_attach_notifier (tmscm arg1) {
+  TMSCM_ASSERT_URL (arg1, TMSCM_ARG1, "buffer-attach-notifier");
+
+  url in1= tmscm_to_url (arg1);
+
+  // TMSCM_DEFER_INTS;
+  attach_buffer_notifier (in1);
+  // TMSCM_ALLOW_INTS;
+
+  return TMSCM_UNSPECIFIED;
+}
+
+tmscm
 tmg_buffer_has_nameP (tmscm arg1) {
   TMSCM_ASSERT_URL (arg1, TMSCM_ARG1, "buffer-has-name?");
 
@@ -9390,6 +9476,8 @@ initialize_glue_basic () {
   tmscm_install_procedure ("integer->hexadecimal",  tmg_integer_2hexadecimal, 1, 0, 0);
   tmscm_install_procedure ("integer->padded-hexadecimal",  tmg_integer_2padded_hexadecimal, 2, 0, 0);
   tmscm_install_procedure ("hexadecimal->integer",  tmg_hexadecimal_2integer, 1, 0, 0);
+  tmscm_install_procedure ("cpp-string-tokenize",  tmg_cpp_string_tokenize, 2, 0, 0);
+  tmscm_install_procedure ("cpp-string-recompose",  tmg_cpp_string_recompose, 2, 0, 0);
   tmscm_install_procedure ("find-left-bracket",  tmg_find_left_bracket, 3, 0, 0);
   tmscm_install_procedure ("find-right-bracket",  tmg_find_right_bracket, 3, 0, 0);
   tmscm_install_procedure ("string->tmstring",  tmg_string_2tmstring, 1, 0, 0);
@@ -9471,10 +9559,13 @@ initialize_glue_basic () {
   tmscm_install_procedure ("url-or",  tmg_url_or, 2, 0, 0);
   tmscm_install_procedure ("url-none?",  tmg_url_noneP, 1, 0, 0);
   tmscm_install_procedure ("url-rooted?",  tmg_url_rootedP, 1, 0, 0);
+  tmscm_install_procedure ("url-rooted-protocol?",  tmg_url_rooted_protocolP, 2, 0, 0);
   tmscm_install_procedure ("url-rooted-web?",  tmg_url_rooted_webP, 1, 0, 0);
   tmscm_install_procedure ("url-rooted-tmfs?",  tmg_url_rooted_tmfsP, 1, 0, 0);
+  tmscm_install_procedure ("url-rooted-tmfs-protocol?",  tmg_url_rooted_tmfs_protocolP, 2, 0, 0);
   tmscm_install_procedure ("url-root",  tmg_url_root, 1, 0, 0);
   tmscm_install_procedure ("url-unroot",  tmg_url_unroot, 1, 0, 0);
+  tmscm_install_procedure ("url-atomic?",  tmg_url_atomicP, 1, 0, 0);
   tmscm_install_procedure ("url-concat?",  tmg_url_concatP, 1, 0, 0);
   tmscm_install_procedure ("url-or?",  tmg_url_orP, 1, 0, 0);
   tmscm_install_procedure ("url-ref",  tmg_url_ref, 2, 0, 0);
@@ -9631,6 +9722,7 @@ initialize_glue_basic () {
   tmscm_install_procedure ("buffer-pretend-modified",  tmg_buffer_pretend_modified, 1, 0, 0);
   tmscm_install_procedure ("buffer-pretend-saved",  tmg_buffer_pretend_saved, 1, 0, 0);
   tmscm_install_procedure ("buffer-pretend-autosaved",  tmg_buffer_pretend_autosaved, 1, 0, 0);
+  tmscm_install_procedure ("buffer-attach-notifier",  tmg_buffer_attach_notifier, 1, 0, 0);
   tmscm_install_procedure ("buffer-has-name?",  tmg_buffer_has_nameP, 1, 0, 0);
   tmscm_install_procedure ("buffer-aux?",  tmg_buffer_auxP, 1, 0, 0);
   tmscm_install_procedure ("buffer-import",  tmg_buffer_import, 3, 0, 0);

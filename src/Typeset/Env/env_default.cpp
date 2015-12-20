@@ -125,6 +125,7 @@ initialize_default_env () {
   env (PAGE_SCREEN_MARGIN) = "true";    // special margins for screen editing?
   env (PAGE_BREAKING)    = "professional";  // quality of page breaking
   env (PAGE_FLEXIBILITY) = "1";         // flexibility factor of stretch
+  env (PAGE_FIRST)       = "1";         // number of first page
   env (PAGE_NR)          = "0";         // the page number
   env (PAGE_THE_PAGE)    = the_page;    // the page number as text
   env (PAGE_WIDTH)       = "auto";      // physical width of pages
@@ -324,6 +325,8 @@ initialize_default_env () {
 			   tree (LOCUS, copy (ref_id), ln3, reftxt));
   env ("pageref")= tree (MACRO, "Id",
 			 tree (LOCUS, copy (ref_id), copy (ln3), preftxt));
+  env ("include")= tree (MACRO, "name",
+			 tree (VAR_INCLUDE, tree (ARG, "name")));
 
   /* further standard macros */
   env ("error")=

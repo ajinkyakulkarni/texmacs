@@ -42,6 +42,17 @@
   (with t (buffer-tree)
     (tree-assign! t (expand-includes (buffer-tree) (buffer-master)))))
 
+(define (buffer-master?) (== (get-init "project-flag") "true"))
+(tm-define (buffer-toggle-master)
+  (:synopsis "Toggle using current buffer as master file of project.")
+  (:check-mark "v" buffer-master?)
+  (init-env "project-flag"
+            (if (== (get-init "project-flag") "true") "false" "true")))
+
+(define (project-attach* u)
+  (with name (url->unix (url-delta (current-buffer) u))
+    (project-attach name)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Main internal representations for document parts:
 ;;   :preamble -> (document (show-preamble preamble) (ignore body))
@@ -256,6 +267,29 @@
       #t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Buffer with included files
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (tm-include? t)
+  (and (tm-func? t 'include 1)
+       (tm-atomic? (tm-ref t 0))))
+
+(tm-define (tm-get-includes doc)
+  (cond ((tm-func? doc 'with)
+	 (tm-get-includes (tm-ref doc :last)))
+	((tm-func? doc 'document)
+	 (append-map tm-get-includes (tm-children doc)))
+	((tm-include? doc)
+	 (list (tm->string (tm-ref doc 0))))
+	(else (list))))
+
+(tm-define (buffer-get-includes)
+  (tm-get-includes (buffer-tree)))
+
+(tm-define (buffer-contains-includes?)
+  (nnull? (buffer-get-includes)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The dynamic document part menu
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,6 +302,13 @@
        (if (== (buffer-get-part-mode) :one)
            (buffer-show-part id)
            (buffer-toggle-part id))))))
+
+(menu-bind preamble-menu
+  (if (buffer-has-preamble?)
+      ("Show preamble" (buffer-set-part-mode :preamble)))
+  (if (not (buffer-has-preamble?))
+      ("Create preamble" (buffer-make-preamble)))
+  ("Show main document" (buffer-set-part-mode :all)))
 
 (menu-bind document-part-menu
   (if (buffer-has-preamble?)
@@ -283,12 +324,18 @@
       (when (in? (buffer-get-part-mode) '(:one :several))
 	(link document-parts-menu))))
 
+(menu-bind document-part-menu
+  (:require (buffer-contains-includes?))
+  (link document-master-menu))
+
 (menu-bind project-manage-menu
-  (group "Upgrade")
-  ("Expand inclusions" (buffer-expand-includes))
+  (when (buffer-contains-includes?)
+    (if (!= (url-suffix (current-buffer)) "tp")
+        ("Use as master" (buffer-toggle-master)))
+    ("Expand inclusions" (buffer-expand-includes)))
   ---
-  (group "Old style")
   (when (not (project-attached?))
-    ("Attach master" (interactive project-attach)))
+    ("Attach master"
+     (choose-file project-attach* "Attach master file for project" "texmacs")))
   (when (project-attached?)
     ("Detach master" (project-detach))))

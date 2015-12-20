@@ -97,7 +97,7 @@ edit_env_rep::rewrite (tree t) {
       macro_src= old_src;
       return r;
     }
-  case INCLUDE:
+  case VAR_INCLUDE:
     {
       if (N(t) == 0) return tree (ERROR, "invalid include");
       url file_name= url_unix (exec_string (t[0]));
@@ -261,7 +261,7 @@ edit_env_rep::exec (tree t) {
     return exec_for_each (t);
   case EXTERN:
     return exec_rewrite (t);
-  case INCLUDE:
+  case VAR_INCLUDE:
     return exec_rewrite (t);
   case USE_PACKAGE:
     return exec_use_package (t);
@@ -964,8 +964,9 @@ edit_env_rep::exec_use_package (tree t) {
     //cout << "Package " << as_string (t[i]) << "\n";
     url name= url_none ();
     url styp= "$TEXMACS_STYLE_PATH";
-    //if (is_rooted_web (base_file_name)) styp= styp | head (base_file_name);
-    //else styp= ::expand (head (base_file_name) * url_ancestor ()) | styp;
+    if (is_rooted (base_file_name, "default"))
+      styp= styp | ::expand (head (base_file_name) * url_ancestor ());
+    else styp= styp | head (base_file_name);
     if (ends (as_string (t[i]), ".ts")) name= as_string (t[i]);
     else name= styp * (as_string (t[i]) * string (".ts"));
     name= resolve (name);
@@ -1684,6 +1685,7 @@ edit_env_rep::exec_set_binding (tree t) {
 	extra << "#" << part (1, N(part));
       local_ref (key) << extra;
     }
+    touched (key)= true;
     if (complete && is_tuple (old_value) && N(old_value) >= 1) {
       string old_s= tree_as_string (old_value[0]);
       string new_s= tree_as_string (value);
@@ -2114,7 +2116,7 @@ edit_env_rep::exec_until (tree t, path p, string var, int level) {
     (void) exec (t);
     return false;
   case EXTERN:
-  case INCLUDE:
+  case VAR_INCLUDE:
     return exec_until_rewrite (t, p, var, level);
   case USE_PACKAGE:
   case USE_MODULE:
@@ -2473,7 +2475,7 @@ edit_env_rep::depends (tree t, string s, int level) {
 	   is_func (t, EVAL_ARGS))
     {
       // FIXME: this does not handle more complex dependencies,
-      // like those encountered after rewritings (INCLUDE, EXTERN, etc.)
+      // like those encountered after rewritings (VAR_INCLUDE, EXTERN, etc.)
       tree v= (L(t) == MAP_ARGS? t[2]: t[0]);
       if (is_compound (v)) return false;
       if (!macro_arg->item->contains (v->label)) return false;

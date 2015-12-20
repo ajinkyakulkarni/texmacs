@@ -107,6 +107,7 @@
 #define INFO_SHORT         2
 #define INFO_DETAILED      3
 #define INFO_PAPER         4
+#define INFO_SHORT_PAPER   5
 
 /******************************************************************************
 * The edit environment
@@ -140,6 +141,7 @@ public:
   bool                         read_only;   // write-protected ?
   hashmap<string,tree>         missing;     // missing refs
   array<tree>                  redefined;   // redefined labels
+  hashmap<string,bool>         touched;     // touched refs
   link_repository              link_env;
 
   int          dpi;
@@ -149,6 +151,7 @@ public:
   double       magn;
   double       mgfy;
   double       flexibility;
+  int          first_page;
   int          mode;
   int          mode_op;
   language     lan;

@@ -287,6 +287,17 @@
   (with d (url-expand (url-complete (url-append u (url-wildcard wc)) "r"))
     (url->list d)))
 
+(define-public (url-remove u)
+  (system-remove u))
+
+(define-public (url-autosave u suf)
+  (and (not (url-rooted-web? name))
+       (not (url-rooted-tmfs? name))
+       (url-glue u suf)))
+
+(define-public (url-wrap u)
+  #f)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Buffers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -318,7 +329,8 @@
   (buffer-get-master (current-buffer)))
 
 (define-public (buffer-in-recent-menu? u)
-  (not (url-rooted-tmfs? u)))
+  (or (not (url-rooted-tmfs? u))
+      (string-starts? (url->unix u) "tmfs://part/")))
 
 (define-public (buffer-in-menu? u)
   (or (buffer-in-recent-menu? u)

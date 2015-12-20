@@ -34,12 +34,41 @@ bool enable_fastenv= false;
 edit_typeset_rep::edit_typeset_rep ():
   the_style (TUPLE),
   cur (hashmap<string,tree> (UNINIT)),
-  stydef (UNINIT), pre (UNINIT), init (UNINIT), fin (UNINIT),
+  stydef (UNINIT), pre (UNINIT), init (UNINIT), fin (UNINIT), grefs (UNINIT),
   env (drd, buf->buf->master,
-       buf->data->ref, (buf->prj==NULL? buf->data->ref: buf->prj->data->ref),
+       buf->data->ref, (buf->prj==NULL? grefs: buf->prj->data->ref),
        buf->data->aux, (buf->prj==NULL? buf->data->aux: buf->prj->data->aux),
        buf->data->att, (buf->prj==NULL? buf->data->att: buf->prj->data->att)),
-  ttt (new_typesetter (env, subtree (et, rp), reverse (rp))) {}
+  ttt (new_typesetter (env, subtree (et, rp), reverse (rp))) {
+  if (buf->prj != NULL) {
+    string id= as_string (delta (buf->prj->buf->name, buf->buf->name));
+    string lab= "part:" * id;
+    hashmap<string,tree> aux= env->global_aux;
+    hashmap<string,tree> ref= env->global_ref;
+    if (aux->contains ("parts")) {
+      tree parts= aux ["parts"];
+      if (is_func (parts, DOCUMENT))
+        for (int i=0; i<N(parts); i++)
+          if (is_tuple (parts[i]) && N(parts[i]) >= 1)
+            if (parts[i][0] == id)
+              for (int j=1; j+1 < N(parts[i]); j+=2)
+                if (is_atomic (parts[i][j])) {
+                  buf->data->init (parts[i][j]->label)= copy (parts[i][j+1]);
+                  init (parts[i][j]->label)= copy (parts[i][j+1]);
+                }      
+    }
+    if (ref->contains (lab)) {
+      tree val= ref [lab];
+      if (is_tuple (val) && N(val) >= 2 && val[1] != tree (UNINIT)) {
+        buf->data->init (PAGE_FIRST)= copy (val[1]);
+        init (PAGE_FIRST)= copy (val[1]);
+      }
+    }
+  }
+  else if (buf->data->init ["part-flag"] == "true")
+    grefs= copy (buf->data->ref);
+}
+
 edit_typeset_rep::~edit_typeset_rep () { delete_typesetter (ttt); }
 
 void
@@ -732,6 +761,17 @@ report_redefined (array<tree> redefined) {
   }
 }
 
+static void
+clean_unused (hashmap<string,tree>& refs, hashmap<string,bool> used) {
+  array<string> a;
+  for (iterator<string> it= iterate (refs); it->busy(); ) {
+    string key= it->next ();
+    if (!used->contains (key)) a << key;
+  }
+  for (int i=0; i<N(a); i++)
+    refs->reset (a[i]);
+}
+
 void
 edit_typeset_rep::typeset (SI& x1, SI& y1, SI& x2, SI& y2) {
   int missing_nr= INT_MAX;
@@ -740,6 +780,7 @@ edit_typeset_rep::typeset (SI& x1, SI& y1, SI& x2, SI& y2) {
     typeset_sub (x1, y1, x2, y2);
     if (!env->complete) break;
     env->complete= false;
+    clean_unused (env->local_ref, env->touched);
     if (N(env->missing) == 0 && N(env->redefined) == 0) break;
     if ((N(env->missing) == missing_nr && N(env->redefined) == redefined_nr) ||
         (N(env->missing) > missing_nr || N(env->redefined) > redefined_nr)) {

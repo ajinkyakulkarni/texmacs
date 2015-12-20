@@ -43,23 +43,23 @@
 
 (tm-define (focus-can-insert? t)
   (:require (or (tm-gpg-decrypted? t)
-		(tm-gpg-encrypted? t)
-		(tm-gpg-passphrase-decrypted? t)
-		(tm-gpg-passphrase-encrypted? t)))
+                (tm-gpg-encrypted? t)
+                (tm-gpg-passphrase-decrypted? t)
+                (tm-gpg-passphrase-encrypted? t)))
   #f)
 
 (tm-define (focus-can-remove? t)
   (:require (or (tm-gpg-decrypted? t)
-		(tm-gpg-encrypted? t)
-		(tm-gpg-passphrase-decrypted? t)
-		(tm-gpg-passphrase-encrypted? t)))
+                (tm-gpg-encrypted? t)
+                (tm-gpg-passphrase-decrypted? t)
+                (tm-gpg-passphrase-encrypted? t)))
   #f)
 
 (tm-define (focus-can-insert-remove? t)
   (:require (or (tm-gpg-decrypted? t)
-		(tm-gpg-encrypted? t)
-		(tm-gpg-passphrase-decrypted? t)
-		(tm-gpg-passphrase-encrypted? t)))
+                (tm-gpg-encrypted? t)
+                (tm-gpg-passphrase-decrypted? t)
+                (tm-gpg-passphrase-encrypted? t)))
   #f)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -95,7 +95,7 @@
 
 (tm-define (standard-options l)
   (:require (or (tm-gpg-symbol-decrypted? l)
-		(tm-gpg-symbol-passphrase-decrypted? l)))
+                (tm-gpg-symbol-passphrase-decrypted? l)))
   (list "gpg-info-level-none"
 	"gpg-info-level-short"
         "gpg-info-level-detailed"))

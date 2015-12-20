@@ -161,7 +161,8 @@
            page-break-menu)
 (lazy-menu (generic document-menu) document-menu
            project-menu document-style-menu global-language-menu)
-(lazy-menu (generic document-part) document-part-menu project-manage-menu)
+(lazy-menu (generic document-part)
+           preamble-menu document-part-menu project-manage-menu)
 (lazy-menu (generic insert-menu) insert-menu texmacs-insert-menu
            texmacs-insert-icons
            insert-link-menu insert-image-menu insert-animation-menu)
@@ -316,6 +317,13 @@
              latex-has-style? latex-has-package?
              latex-has-texmacs-style? latex-has-texmacs-package?)
 (lazy-menu (convert latex tmtex-widgets) tmtex-menu)
+;(display* "time: " (- (texmacs-time) boot-start) "\n")
+;(display* "memory: " (texmacs-memory) " bytes\n")
+
+;(display "Booting partial document facilities\n")
+(lazy-define (part part-shared) buffer-initialize buffer-notify)
+(lazy-menu (part part-menu) document-master-menu)
+(lazy-tmfs-handler (part part-tmfs) part)
 ;(display* "time: " (- (texmacs-time) boot-start) "\n")
 ;(display* "memory: " (texmacs-memory) " bytes\n")
 

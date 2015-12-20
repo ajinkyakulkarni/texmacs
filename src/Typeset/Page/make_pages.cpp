@@ -19,7 +19,8 @@ array<page_item> sub (array<page_item> l, path p, path q);
 SI stretch_space (space spc, double stretch);
 page_item access (array<page_item> l, path p);
 skeleton break_pages (array<page_item> l, space ph, int qual,
-		      space fn_sep, space fnote_sep, space float_sep, font fn);
+		      space fn_sep, space fnote_sep, space float_sep,
+                      font fn, int first_page);
 box page_box (path ip, box b, tree page, int page_nr,
               SI width, SI height, SI left, SI top,
 	      SI bot, box header, box footer, SI head_sep, SI foot_sep);
@@ -83,8 +84,8 @@ pager_rep::pages_format (pagelet pg) {
   //      << " stretch " << pg->stretch
   //      << " height " << stretch_space (pg->ht, pg->stretch) << LF << INDENT;
   if (N (pg->ins) == 0) {
-    if (N(pages) == 0) return empty_box (ip);
-    return empty_box (pages[N(pages)-1]->find_rip());
+    if (N(pages) == 0) return dummy_box (decorate_middle (ip));
+    return dummy_box (decorate_middle (pages [N(pages)-1] -> find_rip ()));
   }
   else if (N (pg->ins) == 1) {
     insertion ins= pg->ins[0];
@@ -172,7 +173,8 @@ void
 pager_rep::pages_make () {
   space ht (text_height- may_shrink, text_height, text_height+ may_extend);
   skeleton sk=
-    break_pages (l, ht, quality, fn_sep, fnote_sep, float_sep, env->fn);
+    break_pages (l, ht, quality, fn_sep, fnote_sep, float_sep,
+                 env->fn, env->first_page);
   int i, n= N(sk);
   for (i=0; i<n; i++)
     pages << pages_make_page (sk[i]);
@@ -182,7 +184,8 @@ void
 pager_rep::papyrus_make () {
   space ht (MAX_SI >> 1);
   skeleton sk=
-    break_pages (l, ht, quality, fn_sep, fnote_sep, float_sep, env->fn);
+    break_pages (l, ht, quality, fn_sep, fnote_sep, float_sep,
+                 env->fn, env->first_page);
   if (N(sk) != 1) {
     failed_error << "Number of pages: " << N(sk) << "\n";
     FAILED ("unexpected situation");

@@ -1,4 +1,4 @@
-<TeXmacs|1.99.3>
+<TeXmacs|1.99.4>
 
 <style|<tuple|source|std>>
 
@@ -488,6 +488,6 @@
 <\initial>
   <\collection>
     <associate|preamble|true>
-    <associate|src-special|raw>
+    <associate|src-special|normal>
   </collection>
 </initial>

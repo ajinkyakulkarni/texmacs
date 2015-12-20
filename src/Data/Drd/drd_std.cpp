@@ -332,6 +332,7 @@ init_std_drd () {
 	fixed (1, 1, BIFORM) -> variable (0) -> regular (1));
   init (EXTERN, "extern",
 	repeat (1, 1, BIFORM) -> code (0) -> regular (1)); // func and args
+  init (VAR_INCLUDE, "include*", fixed (1) -> url_type (0));
   init (INCLUDE, "include", fixed (1) -> url_type (0));
   init (USE_PACKAGE, "use-package", repeat (1, 1) -> string_type (0));
   init (USE_MODULE, "use-module", repeat (1, 1) -> code (0));
@@ -912,6 +913,7 @@ init_std_drd () {
   init_var (PAGE_SCREEN_MARGIN, TYPE_BOOLEAN);
   init_var (PAGE_BREAKING, TYPE_STRING);
   init_var (PAGE_FLEXIBILITY, TYPE_NUMERIC);
+  init_var (PAGE_FIRST, TYPE_NUMERIC);
   init_var (PAGE_NR, TYPE_INTEGER);
   init_var (PAGE_THE_PAGE, TYPE_ADHOC);
   init_var (PAGE_WIDTH, TYPE_LENGTH);
