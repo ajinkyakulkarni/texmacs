@@ -34,6 +34,71 @@ edit_graphics_rep::~edit_graphics_rep () {}
 * Extra subroutines for graphical selections
 ******************************************************************************/
 
+static tree snap_mode;
+static SI snap_distance;
+
+void
+set_snap_mode (tree t) {
+  //cout << "Snap mode= " << t << "\n";
+  snap_mode= t;
+}
+
+void
+set_snap_distance (SI d) {
+  //cout << "Snap distance= " << d << "\n";
+  snap_distance= d;
+}
+
+bool
+check_snap_mode (string type) {
+  if (!is_tuple (snap_mode)) return true;
+  for (int i=0; i<N(snap_mode); i++)
+    if (snap_mode[i] == "all") return true;
+    else if (snap_mode[i] == type) return true;
+  return false;
+}
+
+bool
+can_snap (gr_selection sel) {
+  string type= sel->type;
+  if (type == "free")
+    return true;
+  if (type == "box")
+    return false;
+  if (type == "point")
+    return check_snap_mode ("control point");
+  if (type == "curve-handle")
+    return check_snap_mode ("control point");
+  if (type == "curve-point")
+    return check_snap_mode ("curve point");
+  if (type == "curve-point&curve-point")
+    return check_snap_mode ("curve-curve intersection");
+  if (type == "grid-point")
+    return check_snap_mode ("grid point");
+  if (type == "grid-curve-point")
+    return check_snap_mode ("grid curve point");
+  if (type == "curve-point&grid-curve-point")
+    return check_snap_mode ("curve-grid intersection");
+  if (type == "grid-curve-point&curve-point")
+    return check_snap_mode ("curve-grid intersection");
+  if (type == "text")
+    return check_snap_mode ("text");
+  if (type == "text-handle")
+    return check_snap_mode ("control point");
+  if (type == "text-border")
+    return check_snap_mode ("text border");
+  if (type == "text-border-point")
+    return check_snap_mode ("text border point");
+  if (type == "text-border&grid-curve-point")
+    return check_snap_mode ("text border") &&
+           check_snap_mode ("curve-curve intersection");
+  if (type == "grid-curve-point&text-border")
+    return check_snap_mode ("text border") &&
+           check_snap_mode ("curve-curve intersection");
+  cout << "Uncaptured snap type " << type << "\n";
+  return true;
+}
+
 gr_selection
 snap_to_guide (point p, gr_selections sels, double eps) {
   if (N(sels) == 0) {
@@ -48,17 +113,21 @@ snap_to_guide (point p, gr_selections sels, double eps) {
   gr_selection best;
   best->type= "none";
   for (int i=0; i<N(sels); i++)
-    if (sels[i]->type == "grid-point")
-      best= sels[i];
-    else if (is_nil (sels[i]->c))
-      return sels[i];
+    if (can_snap (sels[i])) {
+      if (sels[i]->type == "grid-point")
+	best= sels[i];
+      else if (is_nil (sels[i]->c))
+	return sels[i];
+    }
 
   for (int i=0; i<N(sels); i++)
     for (int j=i+1; j<N(sels); j++) {
       if (!is_nil (sels[i]->c) &&
 	  !is_nil (sels[j]->c) &&
 	  (sels[i]->type != "grid-curve-point" ||
-	   sels[j]->type != "grid-curve-point"))
+	   sels[j]->type != "grid-curve-point") &&
+          !ends (sels[i]->type, "handle") &&
+          !ends (sels[j]->type, "handle"))
 	{
 	  array<point> ins= intersection (sels[i]->c, sels[j]->c, p, eps);
 	  for (int k=0; k<N(ins); k++)
@@ -69,13 +138,20 @@ snap_to_guide (point p, gr_selections sels, double eps) {
 	      sel->dist= (SI) norm (ins[k] - p);
 	      sel->cp  = append (sels[i]->cp, sels[j]->cp);
 	      sel->pts = append (sels[i]->pts, sels[j]->pts);
-	      best= sel;
+	      if (can_snap (sel)) best= sel;
 	    }
 	}
     }
-  
+
   if (best->type != "none") return best;
-  return sels[0];
+  if (can_snap (sels[0])) return sels[0];
+  else {
+    gr_selection snap;
+    snap->type= "free";
+    snap->p= p;
+    snap->dist= 0;
+    return snap;
+  }
 }
 
 /******************************************************************************
@@ -204,9 +280,9 @@ edit_graphics_rep::adjust (point p) {
   if (is_nil (f2)) return p;
   point fp= f2 (p);
   if ((tree) g != "empty_grid") {
-    point q= g->find_point_around (p, 10*get_pixel_size (), f);
+    point q= g->find_point_around (p, snap_distance, f);
     point fq= f2 (q);
-    if (norm (fq - fp) < 10*get_pixel_size ()) {
+    if (norm (fq - fp) < snap_distance) {
       gr_selection sel;
       sel->type= "grid-point";
       sel->p   = fq;
@@ -214,10 +290,10 @@ edit_graphics_rep::adjust (point p) {
       sels << sel;
     }
     array<grid_curve> gc=
-      g->get_curves_around (p, 10*get_pixel_size (), f);
+      g->get_curves_around (p, snap_distance, f);
     for (int i=0; i<N(gc); i++) {
       point fc= closest (f2 (gc[i]->c), fp);
-      if (norm (fc - fp) < 10*get_pixel_size ()) {
+      if (norm (fc - fp) < snap_distance) {
         gr_selection sel;
         sel->type= "grid-curve-point";
         sel->p   = fc;
@@ -248,7 +324,7 @@ edit_graphics_rep::graphical_select (double x, double y) {
   gr_selections sels;
   point p0 = point (x, y);
   point p = f (p0);
-  sels= eb->graphical_select ((SI)p[0], (SI)p[1], 10*get_pixel_size ());
+  sels= eb->graphical_select ((SI)p[0], (SI)p[1], snap_distance);
   gs= sels;
   gr0= empty_grid ();
   grid g= find_grid ();

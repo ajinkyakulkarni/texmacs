@@ -143,6 +143,8 @@
             (when (nin? var '("gid"))
               (ahash-set! tab var (ahash-ref graphical-attrs var))))
           (graphical-fetch-props (car (sketch-get)))
+          (for (var (list "anim-id"))
+            (ahash-set! tab var (ahash-ref graphical-attrs var)))
           (set! obj (graphics-enrich-bis
                      obj (ahash-ref graphical-attrs "gid") tab))
           (set! current-edge-sel? #f)
@@ -204,7 +206,7 @@
         moveclick-tolerance)))
 
 (define (move-over)
-  (set-message "Left click: new object; Drag: edit object; Middle click: remove" "")
+  (set-message "Left click: new object; Drag: edit object; Right click: remove" "")
   (graphics-decorations-update)
   (if current-path
       (with p2 (tm-upwards-path current-path
@@ -249,8 +251,8 @@
          (== (logand (get-keyboard-modifiers) ShiftMask) 0)))
       (begin
         (if leftclick-waiting
-            (set-message "Left click: finish; Middle click: undo" "")
-            (set-message "Left click: add point; Middle click: undo" ""))
+            (set-message "Left click: finish; Right click: undo" "")
+            (set-message "Left click: add point; Right click: undo" ""))
         (object_set-point current-point-no current-x current-y)))
   (graphics-decorations-update))
 
@@ -260,7 +262,7 @@
 
 (define (next-point)
   (cond ((not (hardly-moved?))
-         (set-message "Left click: finish; Middle click: undo" "")
+         (set-message "Left click: finish; Right click: undo" "")
          (set! leftclick-waiting #t))
         (leftclick-waiting
          (last-point))
@@ -268,7 +270,7 @@
          (undo 0)
          (set! leftclick-waiting #f))
         (else
-         (set-message "Left click: finish; Middle click: undo" "")
+         (set-message "Left click: finish; Right click: undo" "")
          (graphics-back-state #f)
          (graphics-move current-x current-y)
          (set! leftclick-waiting #t))))
@@ -286,7 +288,7 @@
         (graphics-decorations-update))))
 
 ;; Middle button
-(tm-define (middle-button)
+(tm-define (graphics-delete)
   (if sticky-point
       (begin
         (graphics-back-state #f)
@@ -378,7 +380,14 @@
   (:state graphics-state)
   (set-texmacs-pointer 'graphics-cross)
   (when current-obj
-    (middle-button)))
+    (graphics-delete)))
+
+(tm-define (edit_right-button mode x y)
+  (:require (== mode 'edit))
+  (:state graphics-state)
+  (set-texmacs-pointer 'graphics-cross)
+  (when current-obj
+    (graphics-delete)))
 
 (tm-define (edit_start-drag mode x y)
   (:require (== mode 'edit))
@@ -423,6 +432,46 @@
         (select-next inc)
         (graphics-update-decorations))
       (invalidate-graphical-object)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Hand drawn objects
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(tm-define (edit_move mode x y)
+  (:require (== mode 'hand-edit))
+  (:state graphics-state)
+  (noop))
+
+(tm-define (edit_left-button mode x y)
+  (:require (== mode 'hand-edit))
+  (:state graphics-state)
+  (set-texmacs-pointer 'graphics-cross)
+  (edit-clean-up)
+  (object-set! `(with "point style" "disk"
+		      "point-size" ,(graphics-get-property "line-width")
+		  (point ,x ,y)) 'new))
+
+(tm-define (edit_start-drag mode x y)
+  (:require (== mode 'hand-edit))
+  (:state graphics-state)
+  (set-texmacs-pointer 'graphics-cross)
+  (edit-clean-up)
+  (object_create (cadr (graphics-mode)) x y))
+  
+(tm-define (edit_drag mode x y)
+  (:require (== mode 'hand-edit))
+  (:state graphics-state)
+  (let* ((obj (car (sketch-get1)))
+         (rad (stree-radical obj)))
+    (set-cdr! rad (append (cdr rad) (list `(point ,x ,y))))
+    (object-set! obj))
+  (graphics-decorations-update))
+
+(tm-define (edit_end-drag mode x y)
+  (:require (== mode 'hand-edit))
+  (:state graphics-state)
+  (object_commit)
+  (graphics-decorations-reset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Don't dispatch certain actions on textual arguments of graphical macros

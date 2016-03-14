@@ -220,11 +220,16 @@ initialize_default_env () {
   env (GR_EDIT_GRID)        = gr_edit_grid;   // edit grid
   env (GR_EDIT_GRID_ASPECT) = gr_grid_aspect; // edit grid (subdivisions)
   env (GR_TRANSFORMATION)   = gr_transf;      // 3D transformation
+  env (GR_SNAP_DISTANCE)    = "10px";         // default snap distance
 
+  env (GR_GID)           = "default";   // graphical identifier of new objects
+  env (GR_ANIM_ID)       = "default";   // animation identifier of new objects
   env (GR_MAGNIFY)       = "default";   // magnify of new objects
   env (GR_OPACITY)       = "default";   // opacity of new objects
   env (GR_COLOR)         = "default";   // color of new objects
   env (GR_POINT_STYLE)   = "default";   // point style of new objects
+  env (GR_POINT_SIZE)    = "default";   // point size of new objects
+  env (GR_POINT_BORDER)  = "default";   // point border width for new objects
   env (GR_LINE_WIDTH)    = "default";   // line width for new objects
   env (GR_LINE_JOIN)     = "default";   // line join for new objects
   env (GR_LINE_CAPS)     = "default";   // line caps for new objects
@@ -242,8 +247,11 @@ initialize_default_env () {
   env (GR_TEXT_AT_MARGIN)  = "default";   // margins for new text-ats
 
   env (GID)              = "default";   // graphical identifier
+  env (ANIM_ID)          = "";          // identifier inside animations
   env (MAGNIFY)          = "1";         // magnification for graphical objects
   env (POINT_STYLE)      = "disk";      // point style (square, circle...)
+  env (POINT_SIZE)       = "4px";       // point size
+  env (POINT_BORDER)     = "1px";       // point border width
   env (LINE_WIDTH)       = "1ln";       // line width in graphics
   env (LINE_JOIN)        = "normal";    // junctions in multilines
   env (LINE_CAPS)        = "normal";    // caps at ends
@@ -258,7 +266,7 @@ initialize_default_env () {
   env (FILL_STYLE)       = "plain";     // fill style
   env (TEXT_AT_HALIGN)   = "left";      // horizontal text-at alignment
   env (TEXT_AT_VALIGN)   = "base";      // vertical text-at alignment
-  env (TEXT_AT_MARGIN)   = "base";      // margin for smart guides
+  env (TEXT_AT_MARGIN)   = "1spc";      // margin for smart guides
 
   env (SRC_STYLE)        = "angular";   // style for "source" tags
   env (SRC_SPECIAL)      = "normal";    // special treatment of certain tags

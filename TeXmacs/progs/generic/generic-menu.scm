@@ -84,7 +84,7 @@
        (tree-atomic? (tree-ref t i))
        (!= (tree->stree (tree-ref t i)) "")))
 
-(define (hidden-child? t i)
+(tm-define (hidden-child? t i)
   (and (not (tree-accessible-child? t i))
        (not (string-variable-name? t i))
        (!= (type->format (tree-child-type t i)) "n.a.")))
@@ -528,7 +528,9 @@
   (assuming (in-graphics?)
     (dynamic (graphics-focus-icons)))
   (assuming (not (in-graphics?))
-    (dynamic (standard-focus-icons (focus-tree)))))
+    (dynamic (standard-focus-icons (focus-tree))))
+  (assuming (inside? 'anim-edit)
+    (dynamic (animate-focus-icons (tree-innermost 'anim-edit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Focus menus for customizable environments

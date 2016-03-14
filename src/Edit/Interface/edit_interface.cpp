@@ -26,6 +26,8 @@
 #include "gui.hpp" // for gui_interrupted
 
 extern void (*env_next_prog)(void);
+extern void set_snap_mode (tree t);
+extern void set_snap_distance (SI d);
 
 /*static*/ string
 MODE_LANGUAGE (string mode) {
@@ -297,14 +299,23 @@ edit_interface_rep::selection_visible () {
   if ((vx2 - vx1 <= 80*pixel) || (vy2 - vy1 <= 80*pixel)) return;
 
   SI extra= (cur_sb == 1? 20 * pixel: 0);
+  /*
   bool scroll_x= (end_x < vx1 + extra) || (end_x >= vx2 - extra);
   bool scroll_y= (end_y < vy1 + extra) || (end_y >= vy2 - extra);
-  SI new_x= vx1;
-  if (scroll_x) new_x= end_x - ((vx2-vx1)>>1);
-  SI new_y= vy2;
-  if (scroll_y) new_y= end_y + ((vy2-vy1)>>1);
-
   if (scroll_x || scroll_y) {
+    SI new_x = (scroll_x)? end_x : (vx1+vx2)/2;
+    SI new_y = (scroll_y)? end_y : (vy1+vy2)/2;
+  */
+  // trying a "proportional" scroll 
+  SI mx = max (-end_x + vx1 + extra , max( end_x - vx2 + extra, 0 ));
+  SI my = max (-end_y + vy1 + extra , max( end_y - vy2 + extra, 0 ));
+
+  if ((mx>0) || (my>0)) {
+	SI vxc = (vx1+vx2)/2, dx = end_x - vxc;
+	SI vyc = (vy1+vy2)/2, dy = end_y - vyc;
+    SI new_x = vxc+ ((extra)? (mx*dx)/extra: dx);
+	SI new_y = vyc+ ((extra)? (my*dy)/extra: dy);
+  //end change
     scroll_to (new_x, new_y);
     send_invalidate_all (this);
     SI old_vx1= vx1, old_vy1= vy1;
@@ -324,7 +335,9 @@ is_graphical (tree t) {
     is_func (t, _POINT) ||
     is_func (t, LINE) || is_func (t, CLINE) ||
     is_func (t, ARC) || is_func (t, CARC) ||
-    is_func (t, SPLINE) || is_func (t, CSPLINE);
+    is_func (t, SPLINE) || is_func (t, CSPLINE) ||
+    is_func (t, BEZIER) || is_func (t, CBEZIER) ||
+    is_func (t, SMOOTH) || is_func (t, CSMOOTH);
 }
 
 static void
@@ -772,6 +785,14 @@ edit_interface_rep::apply_changes () {
       if (!is_nil (gr - stored_rects))
         invalidate (gx1, gy1, gx2, gy2);
     }
+  }
+
+  // cout << "Graphics snapping\n";
+  if (inside_active_graphics ()) {
+    tree t= as_tree (call ("graphics-get-snap-mode"));
+    set_snap_mode (t);
+    string val= as_string (call ("graphics-get-snap-distance"));
+    set_snap_distance (as_length (val));
   }
   
   // cout << "Handling environment changes\n";

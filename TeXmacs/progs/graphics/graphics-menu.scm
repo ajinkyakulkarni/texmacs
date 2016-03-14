@@ -43,6 +43,14 @@
   ("Center" (graphics-set-geo-valign "center"))
   ("Bottom" (graphics-set-geo-valign "bottom")))
 
+(menu-bind graphics-overlap-menu
+  ("None" (graphics-set-overlap "0cm"))
+  ("1 cm" (graphics-set-overlap "1cm"))
+  ("2 cm" (graphics-set-overlap "2cm"))
+  ("Full" (graphics-set-overlap "1pag"))
+  ---
+  ("Other" (interactive graphics-set-overlap)))
+
 (menu-bind graphics-resize-menu
   (group "Width")
   ("Fast decrease" (graphics-decrease-hsize-fast))
@@ -103,10 +111,14 @@
 
 (menu-bind graphics-global-menu
   (group "Graphics")
-  (-> "Size" (link graphics-extents-menu))
-  (-> "Resize" (link graphics-resize-menu))
-  (-> "Crop" (link graphics-auto-crop-menu))
-  (-> "Alignment" (link graphics-alignment-menu))
+  (if (not (inside-graphical-over-under?))
+      (-> "Size" (link graphics-extents-menu))
+      (-> "Resize" (link graphics-resize-menu))
+      (-> "Crop" (link graphics-auto-crop-menu))
+      (-> "Alignment" (link graphics-alignment-menu)))
+  (if (inside-graphical-over-under?)
+      ("Draw over" (graphics-toggle-over-under))
+      (-> "Overlap" (link graphics-overlap-menu)))
   ---
   (-> "Unit" (link graphics-frame-unit-menu))
   (-> "Origin" (link graphics-frame-origin-menu))
@@ -262,19 +274,27 @@
   ("Point" (graphics-set-mode '(edit point)))
   ("Line" (graphics-set-mode '(edit line)))
   ("Polygon" (graphics-set-mode '(edit cline)))
-  ("Spline" (graphics-set-mode '(edit spline)))
-  ("Closed spline" (graphics-set-mode '(edit cspline)))
+  (-> "Curve"
+      ("Spline" (graphics-set-mode '(edit spline)))
+      ("Smooth" (graphics-set-mode '(edit smooth)))
+      ("Bezier" (graphics-set-mode '(edit bezier))))
+  (-> "Closed curve"      
+      ("Closed spline" (graphics-set-mode '(edit cspline)))
+      ("Closed smooth" (graphics-set-mode '(edit csmooth)))
+      ("Closed bezier" (graphics-set-mode '(edit cbezier))))
   ("Arc" (graphics-set-mode '(edit arc)))
   ("Circle" (graphics-set-mode '(edit carc)))
   ("Text" (graphics-set-mode '(edit text-at)))
   ("Mathematics" (graphics-set-mode '(edit math-at)))
+  ("Hand drawn" (graphics-set-mode '(hand-edit line))) 
   (assuming (style-has? "std-markup-dtd")
     ---
-    (with l (list-union gr-tags-user '(arrow-with-text arrow-with-text*))
-      (for (tag (sort l symbol<=?))
-        ((eval (upcase-first (symbol->string tag)))
-         (import-from (graphics graphics-markup))
-         (graphics-set-mode `(edit ,tag))))))
+    (with u (list-union gr-tags-user '(arrow-with-text arrow-with-text*))
+      (with l (list-filter u (lambda (s) (style-has? (symbol->string s))))
+        (for (tag (sort l symbol<=?))
+          ((eval (upcase-first (symbol->string tag)))
+           (import-from (graphics graphics-markup))
+           (graphics-set-mode `(edit ,tag)))))))
   ---
   ("Set properties" (graphics-set-mode '(group-edit props)))
   ("Move objects" (graphics-set-mode '(group-edit move)))
@@ -345,7 +365,40 @@
   ;;("Disk" (graphics-set-point-style "disk"))
   ("Disk" (graphics-set-point-style "default"))
   ("Round" (graphics-set-point-style "round"))
-  ("Square" (graphics-set-point-style "square")))
+  ("Square" (graphics-set-point-style "square"))
+  ("Diamond" (graphics-set-point-style "diamond"))
+  ("Triangle" (graphics-set-point-style "triangle"))
+  ("Star" (graphics-set-point-style "star"))
+  ("Plus" (graphics-set-point-style "plus"))
+  ("Cross" (graphics-set-point-style "cross")))
+
+(menu-bind graphics-point-size-menu
+  ("1 px" (graphics-set-point-size "1px"))
+  ("2 px" (graphics-set-point-size "2px"))
+  ("4 px" (graphics-set-point-size "default"))
+  ("6 px" (graphics-set-point-size "6px"))
+  ("10 px" (graphics-set-point-size "10px"))
+  ---
+  ("1 ln" (graphics-set-point-size "1ln"))
+  ("2 ln" (graphics-set-point-size "2ln"))
+  ("4 ln" (graphics-set-point-size "4ln"))
+  ("6 ln" (graphics-set-point-size "6ln"))
+  ("10 ln" (graphics-set-point-size "10ln"))
+  ---
+  ("Other" (interactive graphics-set-point-size)))
+
+(menu-bind graphics-point-border-menu
+  ("0.5 px" (graphics-set-point-border "0.5px"))
+  ("1 px" (graphics-set-point-border "default"))
+  ("2 px" (graphics-set-point-border "2px"))
+  ("5 px" (graphics-set-point-border "5px"))
+  ---
+  ("0.5 ln" (graphics-set-point-border "0.5ln"))
+  ("1 ln" (graphics-set-point-border "1ln"))
+  ("2 ln" (graphics-set-point-border "2ln"))
+  ("5 ln" (graphics-set-point-border "5ln"))
+  ---
+  ("Other" (interactive graphics-set-point-border)))
 
 (menu-bind graphics-line-width-menu
   ;;("Default" (graphics-set-line-width "default"))
@@ -366,6 +419,13 @@
   (". . . . ." (graphics-set-dash-style "10"))
   ("- - - - -" (graphics-set-dash-style "11100"))
   ("- . - . -" (graphics-set-dash-style "1111010"))
+  ---
+  (group "Motif")
+  ("Zigzag" (graphics-set-dash-style "zigzag"))
+  ("Wave" (graphics-set-dash-style "wave"))
+  ("Pulse" (graphics-set-dash-style "pulse"))
+  ("Loops" (graphics-set-dash-style "loops"))
+  ("Meander" (graphics-set-dash-style "meander"))
   ;;---
   ;;("Other" (interactive graphics-set-dash-style_))
   ---
@@ -375,8 +435,9 @@
   ("2 ln" (graphics-set-dash-style-unit "2ln"))
   ("5 ln" (graphics-set-dash-style-unit "5ln"))
   ("10 ln" (graphics-set-dash-style-unit "10ln"))
+  ("20 ln" (graphics-set-dash-style-unit "20ln"))
   ---
-  ("Other" (interactive graphics-set-dash-style-unit)))
+  ("Other" (interactive graphics-set-dash-style-unit*)))
 
 (menu-bind graphics-line-arrows-menu
   (group "Right arrow")
@@ -432,6 +493,41 @@
   ("Center" (graphics-set-text-at-valign "center"))
   ("Top" (graphics-set-text-at-valign "top")))
 
+(menu-bind graphics-snap-menu
+  ("None" (graphics-set-snap "none"))
+  ("All" (graphics-set-snap "all"))
+  ---
+  (if (!= (graphics-get-grid-type #t) 'empty)
+      ("Grid points" (graphics-toggle-snap "grid point"))
+      ("Grid curves" (graphics-toggle-snap "grid curve point"))
+      ("Grid-curve intersections"
+       (graphics-toggle-snap "curve-grid intersection")))
+  ("Curve points" (graphics-toggle-snap "curve point"))
+  ("Curve intersections" (graphics-toggle-snap "curve-curve intersection"))
+  ("Text corners" (graphics-toggle-snap "text border point"))
+  ("Text borders" (graphics-toggle-snap "text border"))
+  ---
+  (-> "Snap distance"
+      ("2 px" (graphics-set-snap-distance "2px"))
+      ("5 px" (graphics-set-snap-distance "5px"))
+      ("10 px" (graphics-set-snap-distance "10px"))
+      ("20 px" (graphics-set-snap-distance "20px"))
+      ---
+      ("Other" (interactive graphics-set-snap-distance)))
+  (assuming (graphics-mode-attribute? (graphics-mode) "text-at-margin")
+    (-> "Text padding"
+        ("0.5 spc" (graphics-set-snap-text-padding "0.5spc"))
+        ("1 spc" (graphics-set-snap-text-padding "1spc"))
+        ("1.5 spc" (graphics-set-snap-text-padding "1.5spc"))
+        ("2 spc" (graphics-set-snap-text-padding "2spc"))
+        ---
+        ("3 ln" (graphics-set-snap-text-padding "3ln"))
+        ("5 ln" (graphics-set-snap-text-padding "5ln"))
+        ("7 ln" (graphics-set-snap-text-padding "7ln"))
+        ("10 ln" (graphics-set-snap-text-padding "10ln"))
+        ---
+        ("Other" (interactive graphics-set-snap-text-padding)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Menus for graphics mode
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -445,6 +541,8 @@
 (menu-bind graphics-focus-menu
   (-> (eval (upcase-first (gr-mode->string (graphics-mode))))
       (link graphics-mode-menu))
+  (if (inside-graphical-over-under?)
+      ("Exit graphics" (graphics-exit-right)))
   (assuming (nnull? (graphics-mode-attributes (graphics-mode)))
     ---
     (assuming (graphics-mode-attribute? (graphics-mode) "color")
@@ -456,6 +554,10 @@
         (-> "Opacity" (link graphics-opacity-menu))))
     (assuming (graphics-mode-attribute? (graphics-mode) "point-style")
       (-> "Point style" (link graphics-point-style-menu)))
+    (assuming (graphics-mode-attribute? (graphics-mode) "point-size")
+      (-> "Point size" (link graphics-point-size-menu)))
+    (assuming (graphics-mode-attribute? (graphics-mode) "point-border")
+      (-> "Point border" (link graphics-point-border-menu)))
     (assuming (graphics-mode-attribute? (graphics-mode) "line-width")
       (-> "Line width" (link graphics-line-width-menu)))
     (assuming (graphics-mode-attribute? (graphics-mode) "dash-style")
@@ -467,7 +569,9 @@
     (assuming (graphics-mode-attribute? (graphics-mode) "text-at-halign")
       (-> "Horizontal alignment" (link graphics-text-halign-menu)))
     (assuming (graphics-mode-attribute? (graphics-mode) "text-at-valign")
-      (-> "Vertical alignment" (link graphics-text-valign-menu)))))
+      (-> "Vertical alignment" (link graphics-text-valign-menu))))
+  ---
+  (-> "Snap" (link graphics-snap-menu)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Icons for graphics mode
@@ -477,7 +581,9 @@
   (=> (balloon (icon "tm_graphics_geometry.xpm") "Graphics geometry")
       (link graphics-global-menu))
   (=> (balloon (icon "tm_graphics_grid.xpm") "Graphics grids")
-      (link graphics-grids-menu)))
+      (link graphics-grids-menu))
+  ((balloon (icon "tm_exit_image.xpm") "Exit graphics mode")
+   (graphics-exit-right)))
 
 (tm-menu (graphics-insert-icons)
   ;;(=> (balloon (icon "tm_cell_special.xpm") "Graphical mode")
@@ -508,7 +614,10 @@
    (graphics-set-mode '(edit text-at)))
   ((check (balloon (icon "tm_math.xpm") "Insert mathematics")
           "v" (== (graphics-mode) '(edit math-at)))
-   (graphics-set-mode '(edit math-at))))
+   (graphics-set-mode '(edit math-at)))
+  ((check (balloon (icon "tm_ink_mode.xpm") "Insert hand drawn curves")
+          "v" (== (graphics-mode) '(hand-edit line)))
+   (graphics-set-mode '(hand-edit line))))
 
 (tm-menu (graphics-group-property-icons)
   ((check (balloon (icon "tm_edit_props.xpm") "Change objects properties")
@@ -575,6 +684,22 @@
              (s (if (== ps "default") "disk" ps)))
 	(=> (eval s)
 	    (link graphics-point-style-menu)))))
+  (assuming (graphics-mode-attribute? (graphics-mode) "point-size")
+    /
+    (mini #t
+      (group "Size:")
+      (let* ((ps (graphics-get-property "gr-point-size"))
+             (s (if (== ps "default") "4px" ps)))
+	(=> (eval s)
+	    (link graphics-point-size-menu)))))
+  (assuming (graphics-mode-attribute? (graphics-mode) "point-border")
+    /
+    (mini #t
+      (group "Border:")
+      (let* ((ps (graphics-get-property "gr-point-border"))
+             (s (if (== ps "default") "1px" ps)))
+	(=> (eval s)
+	    (link graphics-point-border-menu)))))
   (assuming
       (or (graphics-mode-attribute? (graphics-mode) "line-width")
           (graphics-mode-attribute? (graphics-mode) "dash-style"))
@@ -616,12 +741,50 @@
 	(=> (eval s)
 	    (link graphics-text-valign-menu))))))
 
+(tm-menu (graphics-snap-icons)
+  (mini #t
+    (=> "Snap:"
+        (link graphics-snap-menu))
+    (if (!= (graphics-get-grid-type #t) 'empty)
+        (if (graphics-get-snap "grid point")
+            ((balloon (icon "tm_snap_grid.xpm")
+                      "Snap to grid")
+             (graphics-reset-snap "grid point")))
+        (if (graphics-get-snap "grid curve point")
+            ((balloon (icon "tm_snap_grid_curve.xpm")
+                      "Snap to grid curve")
+             (graphics-reset-snap "grid curve point")))
+        (if (graphics-get-snap "curve-grid intersection")
+            ((balloon (icon "tm_snap_grid_intersection.xpm")
+                      "Snap to intersections of curves")
+             (graphics-reset-snap "curve-grid intersection"))))
+    (if (graphics-get-snap "curve point")
+        ((balloon (icon "tm_snap_curve.xpm")
+                  "Snap to curves")
+         (graphics-reset-snap "curve point")))
+    (if (graphics-get-snap "curve-curve intersection")
+        ((balloon (icon "tm_snap_curve_intersection.xpm")
+                  "Snap to intersections of curves")
+         (graphics-reset-snap "curve-curve intersection")))
+    (if (graphics-get-snap "text border point")
+        ((balloon (icon "tm_snap_text_border.xpm")
+                  "Snap to text corners")
+         (graphics-reset-snap "text border point")))
+    (if (graphics-get-snap "text border")
+        ((balloon (icon "tm_snap_text_deco.xpm")
+                  "Snap to text borders")
+         (graphics-reset-snap "text border")))))
+
 (define (gr-mode->string s)
   (cond ((== s '(edit point)) "point")
         ((== s '(edit line)) "line")
         ((== s '(edit cline)) "polygon")
         ((== s '(edit spline)) "spline")
         ((== s '(edit cspline)) "closed spline")
+        ((== s '(edit bezier)) "bezier")
+        ((== s '(edit cbezier)) "closed bezier")
+        ((== s '(edit smooth)) "smooth")
+        ((== s '(edit csmooth)) "closed smooth")
         ((== s '(edit arc)) "arc")
         ((== s '(edit carc)) "circle")
         ((== s '(edit text-at)) "text")
@@ -630,6 +793,7 @@
         ((== s '(group-edit move)) "move")
         ((== s '(group-edit zoom)) "resize")
         ((== s '(group-edit rotate)) "rotate")
+        ((== s '(hand-edit line)) "hand drawn")
         ((== s '(group-edit group-ungroup)) "group/ungroup")
         ((and (list-2? s) (== (car s) 'edit) (in? (cadr s) gr-tags-user))
          (symbol->string (cadr s)))
@@ -649,4 +813,25 @@
                  "Current graphical mode")
         (link graphics-mode-menu)))
   (assuming (nnull? (graphics-mode-attributes (graphics-mode)))
-    (link graphics-property-icons)))
+    (link graphics-property-icons))
+  /
+  (link graphics-snap-icons))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Special menus for draw-over / draw-under
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(tm-menu (focus-hidden-menu t)
+  (:require (tree-in? t '(draw-over draw-under)))
+  ---
+  ("Enter graphics" (graphics-enter))
+  (assuming (hidden-child? t 2)
+    (dynamic (string-input-menu t 2))))
+
+(tm-menu (focus-hidden-icons t)
+  (:require (tree-in? t '(draw-over draw-under)))
+  (glue #f #f 10 0)
+  ((balloon (icon "tm_enter_image.xpm") "Enter graphics mode")
+   (graphics-enter))
+  (assuming (hidden-child? t 2)
+    (dynamic (string-input-icon t 2))))

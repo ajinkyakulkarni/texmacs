@@ -23,34 +23,61 @@
 ;;   below, this code is clean.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Commutative diagrams
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(tm-define (graphics-set-notebook-grid)
-  (graphics-set-visual-grid 'cartesian)
-  (graphics-set-unit "1cm")
-  (graphics-set-grid-aspect 'detailed 2 #t)
-  (graphics-set-grid-color 'subunits "#e0e0ff")
-  (delayed
-    (:idle 1)
-    (graphics-set-grid-color 'units "#e0e0ff")
-    (delayed
-      (:idle 1)
-      (graphics-set-grid-color 'axes "#e0e0ff"))))
-
-(tm-define (make-cd)
-  (make-graphics)
-  (delayed
-    (:idle 1)
-    (graphics-set-extents "8.1cm" "3.1cm")
-    (graphics-set-text-at-halign "center")
-    (graphics-set-arrow-end "<gtr>")
-    (graphics-set-mode '(edit math-at))
-    (graphics-set-notebook-grid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Global properties of graphics
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (inside-draw-over?)
+  (inside? 'draw-over))
+
+(tm-define (graphics-toggle-over-under)
+  (:check-mark "*" inside-draw-over?)
+  (with-innermost t graphical-over-under-context?
+    (cond ((tree-is? t 'draw-over)
+           (tree-assign-node! t 'draw-under)
+           (tree-go-to t 0 :end))
+          ((tree-is? t 'draw-under)
+           (tree-assign-node! t 'draw-over)
+           (if (tree-is? (tree-ref t 1) 'with)
+               (tree-go-to t 1 (- (tree-arity (tree-ref t 1)) 1) :end)
+               (tree-go-to t 1 :end))))))
+
+(tm-define (graphics-enter-into t)
+  (set! t (tree-ref t 1))
+  (while (tree-is? t 'with)
+    (set! t (tm-ref t :last)))
+  (when (tree-is? t 'graphics)
+    (tree-go-to t :last :end)))
+
+(tm-define (graphics-enter)
+  (with t (cursor-tree)
+    (when (tree-is? t 'draw-under)
+      (tree-assign-node! t 'draw-over))
+    (if (tree-is? t 'draw-over)
+        (graphics-enter-into t)
+        (with-innermost u 'draw-under
+          (tree-assign-node! u 'draw-over)
+          (graphics-enter-into u)))))
+
+(tm-define (graphics-exit-right)
+  (cond ((inside-graphical-over-under?)
+         (with-innermost t graphical-over-under-context?
+           (tree-go-to t :end)))
+        ((inside? 'graphics)
+         (with-innermost t 'graphics
+           (while (and (tree-up t) (tree-func? (tree-up t) 'with))
+             (set! t (tree-up t)))
+           (tree-go-to t :end)))
+        ((tree-is? (cursor-tree) 'graphics)
+         (with t (cursor-tree)
+           (while (and (tree-up t) (tree-func? (tree-up t) 'with))
+             (set! t (tree-up t)))
+           (tree-go-to t :end)))))
+
+(tm-define (graphics-set-overlap w)
+  (:argument w "Width of overlapping border")
+  (when (inside-graphical-over-under?)
+    (with-innermost t graphical-over-under-context?
+      (tree-set t 2 w))))
 
 (tm-define (graphics-geometry)
   (with geo (tree->stree (get-env-tree "gr-geometry"))
@@ -227,6 +254,32 @@
                ((== a "center") "top")
                ((== a "bottom") "center")
                (else "default"))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Commutative diagrams
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(tm-define (graphics-set-notebook-grid)
+  (graphics-set-visual-grid 'cartesian)
+  (graphics-set-unit "1cm")
+  (graphics-set-grid-aspect 'detailed 2 #t)
+  (graphics-set-grid-color 'subunits "#e0e0ff")
+  (delayed
+    (:idle 1)
+    (graphics-set-grid-color 'units "#e0e0ff")
+    (delayed
+      (:idle 1)
+      (graphics-set-grid-color 'axes "#e0e0ff"))))
+
+(tm-define (make-cd)
+  (make-graphics)
+  (delayed
+    (:idle 1)
+    (graphics-set-extents "8.1cm" "3.1cm")
+    (graphics-set-text-at-halign "center")
+    (graphics-set-arrow-end "<gtr>")
+    (graphics-set-mode '(edit math-at))
+    (graphics-set-notebook-grid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 3D transformations
@@ -781,6 +834,16 @@
   (:check-mark "*" (graphics-test-property? "gr-point-style"))
   (graphics-set-property "gr-point-style" val))
 
+(tm-define (graphics-set-point-size val)
+  (:argument val "Point size")
+  (:check-mark "*" (graphics-test-property? "gr-point-size"))
+  (graphics-set-property "gr-point-size" val))
+
+(tm-define (graphics-set-point-border val)
+  (:argument val "Point border")
+  (:check-mark "*" (graphics-test-property? "gr-point-border"))
+  (graphics-set-property "gr-point-border" val))
+
 (tm-define (graphics-set-line-width val)
   (:argument val "Line width")
   (:check-mark "*" (graphics-test-property? "gr-line-width"))
@@ -795,6 +858,11 @@
   (:argument val "Dash style unit")
   (:check-mark "*" (graphics-test-property? "gr-dash-style-unit"))
   (graphics-set-property "gr-dash-style-unit" val))
+
+(tm-define (graphics-set-dash-style-unit* hu vu)
+  (:argument hu "Horizontal dash style unit")
+  (:argument vu "Vertical dash style unit")
+  (graphics-set-property "gr-dash-style-unit" `(tuple ,hu ,vu)))
 
 (tm-define (graphics-set-fill-color val)
   (:argument val "Fill color")
@@ -820,3 +888,69 @@
   (:argument val "Text-at vertical alignment")
   (:check-mark "*" (graphics-test-property? "gr-text-at-valign"))
   (graphics-set-property "gr-text-at-valign" val))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Snapping
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (get-snap)
+  (with val (graphics-get-property "gr-snap")
+    (if (tm-func? val 'tuple) (tm-children val) (list "all"))))
+
+(define (set-snap l)
+  (graphics-set-property "gr-snap" `(tuple ,@l)))
+
+(define graphics-snap-types
+  (list "control point"
+        "grid point" "grid curve point" "curve-grid intersection"
+        "curve point" "curve-curve intersection"
+         "text border point" "text border"))
+
+(tm-define (graphics-get-snap-mode)
+  (tm->tree (if (== (car (graphics-mode)) 'hand-edit)
+		`(tuple)
+		`(tuple ,@(get-snap)))))
+
+(tm-define (graphics-get-snap-distance)
+  (with val (graphics-get-property "gr-snap-distance")
+    (if (string? val) val "10px")))
+
+(tm-define (graphics-get-snap type)
+  (or (in? type (get-snap))
+      (in? "all" (get-snap))))
+
+(tm-define (graphics-test-snap? type)
+  (if (== type "none")
+      (null? (get-snap))
+      (graphics-get-snap type)))
+
+(tm-define (graphics-set-snap type)
+  (:check-mark "*" graphics-test-snap?)
+  (cond ((== type "none")
+         (set-snap (list)))
+        ((== type "all")
+         (set-snap (list "all")))
+        ((nin? type (get-snap))
+         (set-snap (cons type (get-snap))))))
+
+(tm-define (graphics-reset-snap type)
+  (when (in? "all" (get-snap))
+    (set-snap graphics-snap-types))
+  (when (in? type (get-snap))
+    (set-snap (list-remove (get-snap) type))))
+
+(tm-define (graphics-toggle-snap type)
+  (:check-mark "*" graphics-test-snap?)
+  (if (graphics-get-snap type)
+      (graphics-reset-snap type)
+      (graphics-set-snap type)))
+
+(tm-define (graphics-set-snap-distance val)
+  (:argument val "Snap distance")
+  (:check-mark "*" (graphics-test-property? "gr-snap-distance"))
+  (graphics-set-property "gr-snap-distance" val))
+
+(tm-define (graphics-set-snap-text-padding val)
+  (:argument val "Text padding for snapping")
+  (:check-mark "*" (graphics-test-property? "gr-text-at-margin"))
+  (graphics-set-property "gr-text-at-margin" val))

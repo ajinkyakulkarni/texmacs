@@ -71,6 +71,8 @@ notify_graphics_extents (tree t, point lbot, point rtop) {
 void
 concater_rep::typeset_graphics (tree t, path ip) {
 BEGIN_MAGNIFY
+  env->update_color ();
+  env->update_dash_style_unit ();
   grid gr= as_grid (env->read (GR_GRID));
   array<box> bs;
   gr->set_aspect (env->read (GR_GRID_ASPECT));
@@ -200,7 +202,8 @@ BEGIN_MAGNIFY
       }
       else if (valign == "center") y -= ((b->y1 + b->y2) >> 1);
       else if (valign == "top") y -= b->y2;
-      print (text_at_box (ip, b, x, y, axis, env->fn->spc->def));
+      SI pad= env->get_length (TEXT_AT_MARGIN);
+      print (text_at_box (ip, b, x, y, axis, pad));
     }
   }
 END_MAGNIFY
@@ -248,7 +251,8 @@ BEGIN_MAGNIFY
     for (i=0; i<n; i++)
       u[i]= env->exec (t[i]);
     point p= env->fr (env->as_point (u));
-    print (point_box (ip, p, 20*PIXEL, env->pen,
+    pencil pen= env->pen->set_width (env->point_border);
+    print (point_box (ip, p, env->point_size, pen,
                       env->fill_brush, env->point_style));
   }
 END_MAGNIFY
@@ -296,7 +300,7 @@ BEGIN_MAGNIFY
     }
     curve c= env->fr (poly_segment (a, cip));
     print (curve_box (ip, c, env->pen,
-                      env->dash_style, env->dash_style_unit,
+                      env->dash_style, env->dash_motif, env->dash_style_unit,
                       env->fill_brush, typeset_line_arrows (ip)));
   }
 END_MAGNIFY
@@ -321,7 +325,7 @@ BEGIN_MAGNIFY
     else {
       curve c= env->fr (arc (a, cip, close));
       print (curve_box (ip, c, env->pen,
-                        env->dash_style, env->dash_style_unit,
+                        env->dash_style, env->dash_motif, env->dash_style_unit,
                         env->fill_brush, typeset_line_arrows (ip)));
     }
   }
@@ -346,7 +350,7 @@ BEGIN_MAGNIFY
     }
     curve c= env->fr (N(a)>=3 ? spline (a, cip, close): poly_segment (a, cip));
     print (curve_box (ip, c, env->pen,
-                      env->dash_style, env->dash_style_unit,
+                      env->dash_style, env->dash_motif, env->dash_style_unit,
                       env->fill_brush, typeset_line_arrows (ip)));
   }
 END_MAGNIFY
@@ -361,6 +365,37 @@ concater_rep::typeset_var_spline (tree t, path ip) {
 void
 concater_rep::typeset_cspline (tree t, path ip) {
   typeset_spline (t, ip, true);
+}
+
+void
+concater_rep::typeset_bezier (tree t, path ip) {
+BEGIN_MAGNIFY
+  int i, n= N(t);
+  array<point> a(n);
+  for (i=0; i<n; i++)
+    a[i]= env->as_point (env->exec (t[i]));
+  array<path> cip(n);
+  for (i=0; i<n; i++)
+    cip[i]= descend (ip, i);
+  if (N(a) == 0 || N(a[0]) == 0) typeset_error (t, ip);
+  else {
+    if (N(a) == 1) {
+      a << copy (a[0]);
+      cip << cip[0];
+    }
+    curve c;
+    if (N(a) < 3) c= poly_segment (a, cip);
+    else {
+      bool simple= is_func (t, SMOOTH) || is_func (t, CSMOOTH);
+      bool closed= is_func (t, CBEZIER) || is_func (t, CSMOOTH);
+      c= poly_bezier (a, cip, simple, closed);
+    }
+    c= env->fr (c);
+    print (curve_box (ip, c, env->pen,
+                      env->dash_style, env->dash_motif, env->dash_style_unit,
+                      env->fill_brush, typeset_line_arrows (ip)));
+  }
+END_MAGNIFY
 }
 
 void

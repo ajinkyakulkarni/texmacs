@@ -201,11 +201,16 @@ extern string GR_GRID_ASPECT;
 extern string GR_EDIT_GRID;
 extern string GR_EDIT_GRID_ASPECT;
 extern string GR_TRANSFORMATION;
+extern string GR_SNAP_DISTANCE;
 
+extern string GR_GID;
+extern string GR_ANIM_ID;
 extern string GR_MAGNIFY;
 extern string GR_OPACITY;
 extern string GR_COLOR;
 extern string GR_POINT_STYLE;
+extern string GR_POINT_SIZE;
+extern string GR_POINT_BORDER;
 extern string GR_LINE_WIDTH;
 extern string GR_LINE_JOIN;
 extern string GR_LINE_CAPS;
@@ -223,8 +228,11 @@ extern string GR_TEXT_AT_VALIGN;
 extern string GR_TEXT_AT_MARGIN;
 
 extern string GID;
+extern string ANIM_ID;
 extern string MAGNIFY;
 extern string POINT_STYLE;
+extern string POINT_SIZE;
+extern string POINT_BORDER;
 extern string LINE_WIDTH;
 extern string LINE_JOIN;
 extern string LINE_CAPS;

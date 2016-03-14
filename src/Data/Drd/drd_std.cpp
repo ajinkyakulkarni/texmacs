@@ -51,6 +51,7 @@ hashmap<string,int> STD_CODE (UNKNOWN);
 #define returns_url() type (TYPE_URL)
 #define returns_identifier() type (TYPE_IDENTIFIER)
 #define returns_animation() type (TYPE_ANIMATION)
+#define returns_duration() type (TYPE_DURATION)
 #define returns_color() type (TYPE_COLOR)
 #define returns_graphical() type (TYPE_GRAPHICAL)
 #define returns_constraint() type (TYPE_CONSTRAINT)
@@ -428,6 +429,8 @@ init_std_drd () {
   init (GU_LENGTH, "gu-length", fixed (0) -> returns_length ());
   init (TMPT_LENGTH, "tmpt-length", fixed (0) -> returns_length ());
   init (PX_LENGTH, "px-length", fixed (0) -> returns_length ());
+  init (MS_LENGTH, "ms-length", fixed (0) -> returns_length ());
+  init (S_LENGTH, "s-length", fixed (0) -> returns_length ());
   init (MSEC_LENGTH, "msec-length", fixed (0) -> returns_length ());
   init (SEC_LENGTH, "sec-length", fixed (0) -> returns_length ());
   init (MIN_LENGTH, "min-length", fixed (0) -> returns_length ());
@@ -564,6 +567,18 @@ init_std_drd () {
 	color_type (1) -> name (1, "color") ->
 	argument (2) -> name (2, "source"));
 
+  init (ANIM_STATIC, "anim-static",
+	fixed (1, 3, BIFORM) -> returns_animation () ->
+        duration (1));
+  init (ANIM_DYNAMIC, "anim-dynamic",
+	fixed (1, 3, BIFORM) -> returns_animation () ->
+        duration (1));
+  init (MORPH, "morph",
+	repeat (1, 1) -> regular (0));
+  init (ANIM_TIME, "anim-time",
+	fixed (0) -> returns_duration ());
+  init (ANIM_PORTION, "anim-portion",
+	fixed (0) -> returns_numeric ());
   init (ANIM_COMPOSE, "anim-compose",
 	repeat (1, 1) -> returns_animation () ->
 	animation (0));
@@ -630,6 +645,14 @@ init_std_drd () {
   init (VAR_SPLINE, "spline*",
 	repeat (2, 1) -> returns_graphical () -> point_type (0));
   init (CSPLINE, "cspline",
+	repeat (3, 1) -> returns_graphical () -> point_type (0));
+  init (BEZIER, "bezier",
+	repeat (2, 1) -> returns_graphical () -> point_type (0));
+  init (CBEZIER, "cbezier",
+	repeat (3, 1) -> returns_graphical () -> point_type (0));
+  init (SMOOTH, "smooth",
+	repeat (2, 1) -> returns_graphical () -> point_type (0));
+  init (CSMOOTH, "csmooth",
 	repeat (3, 1) -> returns_graphical () -> point_type (0));
   init (FILL, "fill",
 	repeat (1, 1));                       // Not yet implemented
@@ -1010,10 +1033,14 @@ init_std_drd () {
   init_var (GR_EDIT_GRID_ASPECT, TYPE_ADHOC);
   init_var (GR_TRANSFORMATION, TYPE_ADHOC);
 
+  init_var (GR_GID, TYPE_INTEGER);
+  init_var (GR_ANIM_ID, TYPE_INTEGER);
   init_var (GR_MAGNIFY, TYPE_NUMERIC);
   init_var (GR_OPACITY, TYPE_NUMERIC);
   init_var (GR_COLOR, TYPE_COLOR);
   init_var (GR_POINT_STYLE, TYPE_STRING);
+  init_var (GR_POINT_SIZE, TYPE_LENGTH);
+  init_var (GR_POINT_BORDER, TYPE_LENGTH);
   init_var (GR_LINE_WIDTH, TYPE_LENGTH);
   init_var (GR_LINE_JOIN, TYPE_STRING);
   init_var (GR_LINE_CAPS, TYPE_STRING);
@@ -1031,8 +1058,11 @@ init_std_drd () {
   init_var (GR_TEXT_AT_MARGIN, TYPE_LENGTH);
 
   init_var (GID, TYPE_INTEGER);
+  init_var (ANIM_ID, TYPE_INTEGER);
   init_var (MAGNIFY, TYPE_NUMERIC);
   init_var (POINT_STYLE, TYPE_STRING);
+  init_var (POINT_SIZE, TYPE_LENGTH);
+  init_var (POINT_BORDER, TYPE_LENGTH);
   init_var (LINE_WIDTH, TYPE_LENGTH);
   init_var (LINE_JOIN, TYPE_STRING);
   init_var (LINE_CAPS, TYPE_STRING);

@@ -59,12 +59,13 @@
 #define Env_Src_Compact       27
 #define Env_Src_Close         28
 #define Env_Point_Style       29
-#define Env_Dash_Style        30
-#define Env_Dash_Style_Unit   31
-#define Env_Fill_Color        32
-#define Env_Line_Arrows       33
-#define Env_Text_At_Halign    34
-#define Env_Text_At_Valign    35
+#define Env_Point_Size        30
+#define Env_Dash_Style        31
+#define Env_Dash_Style_Unit   32
+#define Env_Fill_Color        33
+#define Env_Line_Arrows       34
+#define Env_Text_At_Halign    35
+#define Env_Text_At_Valign    36
 
 /******************************************************************************
 * For style file editing
@@ -165,28 +166,37 @@ public:
   int          alpha;
   pencil       pen;
   bool         no_patterns;
-  string       point_style;
   bool         preamble;
+
   int          info_level;
+  int          src_style;
+  int          src_special;
+  int          src_compact;
+  int          src_close;
+  int          inactive_mode;
+  tree         recover_env;
+
+  double       anim_start;
+  double       anim_end;
+  double       anim_portion;
+
   SI           gw;
   SI           gh;
   string       gvalign;
   frame        fr;
   point        clip_lim1;
   point        clip_lim2;
-  int          src_style;
-  int          src_special;
-  int          src_compact;
-  int          src_close;
+  string       point_style;
+  SI           point_size;
+  SI           point_border;
   array<bool>  dash_style;
+  array<point> dash_motif;
   SI           dash_style_unit;
+  double       dash_style_ratio;
   brush        fill_brush;
   array<tree>  line_arrows;
   string       text_at_halign;
   string       text_at_valign;
-
-  int          inactive_mode;
-  tree         recover_env;
 
   string       page_type;
   bool         page_landscape;
@@ -305,6 +315,8 @@ private:
   tree exec_gw_length ();
   tree exec_gh_length ();
   tree exec_gu_length ();
+  tree exec_ms_length ();
+  tree exec_s_length ();
   tree exec_msec_length ();
   tree exec_sec_length ();
   tree exec_min_length ();
@@ -318,6 +330,12 @@ private:
   tree exec_get_attachment (tree t);
 
   tree exec_pattern (tree t);
+
+  tree exec_anim_static (tree t);
+  tree exec_anim_dynamic (tree t);
+  tree exec_morph (tree t);
+  tree exec_anim_time ();
+  tree exec_anim_portion ();
 
   tree exec_point (tree t);
 
@@ -368,6 +386,10 @@ public:
   tree   expand (tree t, bool search_accessible= false);
   bool   depends (tree t, string s, int level);
   tree   rewrite (tree t);
+  tree   animate (tree t);
+  tree   checkout_animation (tree t);
+  tree   commit_animation (tree t);
+  tree   expand_morph (tree t);
 
   inline void monitored_write (string s, tree t) {
     back->write_back (s, env); env (s)= t; }
@@ -420,6 +442,7 @@ public:
   void   update_src_compact ();
   void   update_src_close ();
   void   update_dash_style ();
+  void   update_dash_style_unit ();
   void   update_line_arrows ();
   void   update ();
   void   update (string env_var);
@@ -504,6 +527,7 @@ double as_percentage (tree t);
 bool is_magnification (string s);
 double get_magnification (string s);
 int decode_alpha (string s);
+array<double> get_control_times (tree t);
 
 void set_graphical_value (tree var, tree val);
 bool has_graphical_value (tree var);

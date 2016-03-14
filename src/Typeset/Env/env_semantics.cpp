@@ -115,6 +115,8 @@ initialize_default_var_type () {
   var_type (PAGE_MNOTE_WIDTH)   = Env_Page;
 
   var_type (POINT_STYLE)        = Env_Point_Style;
+  var_type (POINT_SIZE)         = Env_Point_Size;
+  var_type (POINT_BORDER)       = Env_Point_Size;
   var_type (LINE_WIDTH)         = Env_Line_Width;
   var_type (DASH_STYLE)         = Env_Dash_Style;
   var_type (DASH_STYLE_UNIT)    = Env_Dash_Style_Unit;
@@ -473,8 +475,10 @@ edit_env_rep::update_geometry () {
   gh= as_length ("0.6par");
   gvalign= as_string ("center");
   if (is_tuple (t, "geometry", 2) || is_tuple (t, "geometry", 3)) {
-    if (is_length (as_string (t[1]))) gw= as_length (t[1]);
-    if (is_length (as_string (t[2]))) gh= as_length (t[2]);
+    if (is_length (as_string (t[1])) || is_anylen (t[1]))
+      gw= as_length (t[1]);
+    if (is_length (as_string (t[2])) || is_anylen (t[2]))
+      gh= as_length (t[2]);
     if (is_tuple (t, "geometry", 3))
       gvalign= as_string (t[3]);
   }
@@ -560,6 +564,7 @@ void
 edit_env_rep::update_dash_style () {
   tree t= env [DASH_STYLE];
   dash_style= array<bool> (0);
+  dash_motif= array<point> (0);
   if (is_string (t)) {
     string s= as_string (t);
     if (N(s) > 0 && (s[0] == '0' || s[0] == '1')) {
@@ -568,7 +573,60 @@ edit_env_rep::update_dash_style () {
       for (i=0; i<n; i++)
         dash_style[i]= (s[i] != '0');
     }
+    else if (N(s) > 0) {
+      if (s == "zigzag")
+        dash_motif << point (0.25, 0.5) << point (0.75, -0.5);
+      else if (s == "wave")
+        for (int k=1; k<=11; k++)
+          dash_motif << point (k / 12.0, sin (3.141592*k / 6.0) / 2.0);
+      else if (s == "pulse")
+        dash_motif << point (0.0, 0.5) << point (0.5, 0.5)
+                   << point (0.5, -0.5) << point (1.0, -0.5);
+      else if (s == "loops")
+        for (int k=1; k<=11; k++) {
+          double c= (1.0 - cos (3.141592*k / 6.0)) / 2.0;
+          double s= sin (3.141592*k / 6.0) / 2.0;
+          dash_motif << point (k / 12.0 + c, s);
+        }
+      else if (s == "meander") {
+        double u= 1.0 / 12.0;
+        dash_motif << point (-0.5*u, 0.0)
+                   << point (5*u, 0.0) << point (5*u, 5*u)
+                   << point (u, 5*u) << point (u, 2*u)
+                   << point (3*u, 2*u) << point (3*u, 3*u)
+                   << point (2*u, 3*u) << point (2*u, 4*u)
+                   << point (4*u, 4*u) << point (4*u, u)
+                   << point (0.0, u) << point (0.0, 6*u)
+                   << point (5.5*u, 6*u)
+                   << point (11*u, 6*u) << point (11*u, u)
+                   << point (7*u, u) << point (7*u, 4*u)
+                   << point (9*u, 4*u) << point (9*u, 3*u)
+                   << point (8*u, 3*u) << point (8*u, 2*u)
+                   << point (10*u, 2*u) << point (10*u, 5*u)
+                   << point (6*u, 5*u) << point (6*u, 0.0);
+        for (int i=0; i<N(dash_motif); i++)
+          dash_motif[i][0] += 0.5*u;
+      }
+      for (int i=0; i<N(dash_motif); i++)
+        dash_motif[i][1] *= dash_style_ratio;
+    }
   }
+}
+
+void
+edit_env_rep::update_dash_style_unit () {
+  tree t= read (DASH_STYLE_UNIT);
+  if (is_tuple (t) && N(t) == 2) {
+    SI hunit= as_length (t[0]);
+    SI vunit= as_length (t[1]);
+    dash_style_unit = hunit;
+    dash_style_ratio= ((double) vunit) / max (((double) hunit), 1.0);
+  }
+  else {
+    dash_style_unit= as_length (t);
+    dash_style_ratio= 1.0;
+  }
+  if (N(dash_motif) != 0) update_dash_style ();
 }
 
 void
@@ -687,11 +745,13 @@ edit_env_rep::update () {
 
   update_geometry ();
   update_frame ();
-  point_style= get_string (POINT_STYLE);
+  point_style = get_string (POINT_STYLE);
+  point_size  = get_length (POINT_SIZE);
+  point_border= get_length (POINT_BORDER);
   update_color ();
   update_pattern_mode ();
   update_dash_style ();
-  dash_style_unit= get_length (DASH_STYLE_UNIT);
+  update_dash_style_unit ();
   update_line_arrows ();
   text_at_halign= get_string (TEXT_AT_HALIGN);
   text_at_valign= get_string (TEXT_AT_VALIGN);
@@ -721,9 +781,13 @@ edit_env_rep::update (string s) {
     magn= get_double (MAGNIFICATION);
     update_font ();
     update_color ();
+    update_dash_style_unit ();
     break;
   case Env_Magnify:
     mgfy= get_double (MAGNIFY);
+    update_font ();
+    update_color ();
+    update_dash_style_unit ();
     break;
   case Env_Language:
     update_language ();
@@ -780,6 +844,10 @@ edit_env_rep::update (string s) {
   case Env_Point_Style:
     point_style= get_string (POINT_STYLE);
     break;
+  case Env_Point_Size:
+    point_size= get_length (POINT_SIZE);
+    point_border= get_length (POINT_BORDER);
+    break;
   case Env_Line_Width:
     update_color ();
     break;
@@ -787,7 +855,7 @@ edit_env_rep::update (string s) {
     update_dash_style();
     break;
   case Env_Dash_Style_Unit:
-    dash_style_unit= get_length (DASH_STYLE_UNIT);
+    update_dash_style_unit ();
     break;
   case Env_Fill_Color:
     update_color ();

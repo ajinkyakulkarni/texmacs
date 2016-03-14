@@ -23,8 +23,14 @@
 (define-group graphical-atomic-tag
   point)
 
+(define-group graphical-open-curve-tag
+  line spline bezier smooth arc)
+
+(define-group graphical-closed-curve-tag
+  cline cspline cbezier csmooth carc)
+
 (define-group graphical-curve-tag
-  line cline spline cspline arc carc)
+  (graphical-open-curve-tag) (graphical-closed-curve-tag))
 
 (define-group graphical-text-tag
   text-at math-at)
@@ -44,6 +50,9 @@
 (define-group graphical-tag
   (graphical-non-group-tag) (graphical-group-tag))
 
+(define-group graphical-over-under-tag
+  draw-over draw-under)
+
 (tm-define (graphical-text-context? t)
   (tm-in? t (graphical-text-tag-list)))
 
@@ -53,8 +62,14 @@
 (tm-define (graphical-text-arg-context? t)
   (and (graphical-text-context? t) (< (tm-arity t) 2)))
 
+(tm-define (graphical-over-under-context? t)
+  (tm-in? t (graphical-over-under-tag-list)))
+
 (tm-define (inside-graphical-text?)
   (tree-innermost graphical-text-context?))
+
+(tm-define (inside-graphical-over-under?)
+  (tree-innermost graphical-over-under-context?))
 
 (tm-define gr-tags-user      (list))
 (tm-define gr-tags-all       (graphical-tag-list))
@@ -81,10 +96,13 @@
 
 (define-table attribute-default-table
   ("gid" . "default")
+  ("anim-id" . "default")
   ("magnify" . "1")
   ("color" . "black")
   ("opacity" . "100%")
   ("point-style" . "disk")
+  ("point-size" . "4px")
+  ("point-border" . "1px")
   ("line-width" . "1ln")
   ("line-join" . "normal")
   ("line-caps" . "normal")
@@ -98,7 +116,8 @@
   ("fill-color" . "none")
   ("fill-style" . "plain")
   ("text-at-halign" . "left")
-  ("text-at-valign" . "base"))
+  ("text-at-valign" . "base")
+  ("text-at-margin" . "1spc"))
 
 (tm-define (graphics-attribute-default attr)
   (if (gr-prefixed? attr)
@@ -110,6 +129,7 @@
         ((== x "10") ". . . . .")
         ((== x "11100") "- - - - -")
         ((== x "1111010") "- . - . -")
+        ((string-alpha? x) x)
         (else "other")))
 
 (tm-define (decode-arrow x)
@@ -130,7 +150,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (tm-define (graphics-common-attributes)
-  '("gid" "magnify" "color" "opacity"))
+  '("gid" "anim-id" "magnify" "color" "opacity"))
 
 (tm-define (graphics-all-attributes)
   (map car (ahash-table->list attribute-default-table)))
@@ -141,8 +161,7 @@
 (tm-define (graphics-attributes tag)
   (:require (== tag 'point))
   (append (graphics-common-attributes)
-          '("fill-color"
-            "point-style")))
+          '("fill-color" "point-style" "point-size" "point-border")))
 
 (tm-define (graphics-attributes tag)
   (:require (or (graphical-curve-tag? tag) (graphical-user-tag? tag)))
@@ -155,7 +174,7 @@
 (tm-define (graphics-attributes tag)
   (:require (graphical-text-tag? tag))
   (append (graphics-common-attributes)
-          '("text-at-halign" "text-at-valign")))
+          '("text-at-halign" "text-at-valign" "text-at-margin")))
 
 (tm-define (graphics-attributes tag)
   (:require (graphical-group-tag? tag))
@@ -170,6 +189,7 @@
 
 (tm-define (graphics-mode-attributes mode)
   (cond ((func? mode 'edit 1) (graphics-attributes (cadr mode)))
+        ((func? mode 'hand-edit 1) (graphics-attributes (cadr mode)))
         ((== mode '(group-edit props)) (graphics-all-attributes))
         (else '())))
 

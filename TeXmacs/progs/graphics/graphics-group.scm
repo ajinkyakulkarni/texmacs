@@ -166,7 +166,7 @@
 (tm-define (graphics-assign-props p obj)
   (let* ((l1 (graphics-all-attributes))
          (l2 (map gr-prefix l1))
-         (l3 (map graphics-get-property l2))
+         (l3 (map (graphics-get-property-at p) l2))
          (l4 (map cons l1 l3))
          (tab (list->ahash-table l4)))
     (graphics-remove p 'memoize-layer)
@@ -175,7 +175,7 @@
 (tm-define (graphics-copy-props p)
   (let* ((t (path->tree p))
          (attrs (graphical-relevant-attributes t))
-         (vars (list-difference attrs '("gid")))
+         (vars (list-difference attrs '("gid" "anim-id")))
          (get-prop (lambda (var) (graphics-path-property p var)))
          (gr-vars (map gr-prefix vars))
          (vals (map get-prop vars)))
@@ -201,57 +201,59 @@
 (tm-define (start-operation opn p obj)
   (:require (graphical-non-group-tag? (car obj)))
   (set! current-path #f)
-  (if sticky-point
-      ;;Perform operation
-      (begin
-        (sketch-commit)
-        (graphics-decorations-update)
-        (if (== (state-ref graphics-first-state 'graphics-action)
-                'start-operation)
-            (remove-undo-mark))
-        (set! graphics-undo-enabled #t)
-        (graphics-forget-states))
-      ;;Start operation
-      (cond
-        ((and (not multiselecting) (eq? (cadr (graphics-mode)) 'group-ungroup))
-         (if (and p (not sticky-point) (null? (sketch-get))
-                  (== (tree-label (path->tree p)) 'gr-group))
-             (sketch-set! `(,(path->tree p))))
-         (if (and (not sticky-point)
-                  (== (length (sketch-get)) 1)
-                  (== (tree-label (car (sketch-get))) 'gr-group))
-             (ungroup-current-object)
-             (group-selected-objects)))
-        ((and (not multiselecting) (== (cadr (graphics-mode)) 'props))
-         (if (null? (sketch-get))
-             (if p
-                 (begin
-                   (set! obj (stree-at p))
-                   (set! current-path (graphics-assign-props p obj))
-                   (set! current-obj obj)
-                   (graphics-decorations-update)))
-             (with l '()
-               (for (o (sketch-get))
-                 (with p (graphics-assign-props
-                          (tree->path o)
-                          (tree->stree o))
-                   (set! l (cons (path->tree p) l))))
-               (sketch-set! (reverse l))
-               (graphics-decorations-update)))
-         (graphics-group-start))
-        ((and (not multiselecting) (or p (nnull? (sketch-get))))
-         (if (null? (sketch-get))
-             (any_toggle-select #f #f p obj))
-         (if (store-important-points)
+  (if (not sticky-point)
+      (set! preselected (nnull? (sketch-get))))
+  (cond
+    ;;Perform operation
+    (sticky-point
+     (sketch-commit)
+     (graphics-decorations-update)
+     (if (== (state-ref graphics-first-state 'graphics-action)
+             'start-operation)
+         (remove-undo-mark))
+     (set! graphics-undo-enabled #t)
+     (graphics-forget-states)
+     (if (not preselected) (unselect-all p obj))
+     (set! preselected #f))
+    ;;Start operation
+    ((and (not multiselecting) (eq? (cadr (graphics-mode)) 'group-ungroup))
+     (if (and p (not sticky-point) (null? (sketch-get))
+              (== (tree-label (path->tree p)) 'gr-group))
+         (sketch-set! `(,(path->tree p))))
+     (if (and (not sticky-point)
+              (== (length (sketch-get)) 1)
+              (== (tree-label (car (sketch-get))) 'gr-group))
+         (ungroup-current-object)
+         (group-selected-objects)))
+    ((and (not multiselecting) (== (cadr (graphics-mode)) 'props))
+     (if (null? (sketch-get))
+         (if p
              (begin
-               (graphics-store-state 'start-operation)
-               (sketch-checkout)
-               (sketch-transform tree->stree)
-               (set! group-first-go (copy-tree (sketch-get)))
-               (set! graphics-undo-enabled #f)
-               (graphics-store-state #f)
-               (set! group-old-x (s2f current-x))
-               (set! group-old-y (s2f current-y))))))))
+               (set! obj (stree-at p))
+               (set! current-path (graphics-assign-props p obj))
+               (set! current-obj obj)
+               (graphics-decorations-update)))
+         (with l '()
+           (for (o (sketch-get))
+             (with p (graphics-assign-props
+                      (tree->path o)
+                      (tree->stree o))
+               (set! l (cons (path->tree p) l))))
+           (sketch-set! (reverse l))
+           (graphics-decorations-update)))
+     (graphics-group-start))
+    ((and (not multiselecting) (or p (nnull? (sketch-get))))
+     (if (null? (sketch-get))
+         (any_toggle-select #f #f p obj))
+     (store-important-points) ;; ignore return value?
+     (graphics-store-state 'start-operation)
+     (sketch-checkout)
+     (sketch-transform tree->stree)
+     (set! group-first-go (copy-tree (sketch-get)))
+     (set! graphics-undo-enabled #f)
+     (graphics-store-state #f)
+     (set! group-old-x (s2f current-x))
+     (set! group-old-y (s2f current-y)))))
 
 (define (any_toggle-select x y p obj)
   (if (not sticky-point)
@@ -317,34 +319,39 @@
 (tm-define (edit_move mode x y)
   (:require (eq? mode 'group-edit))
   (:state graphics-state)
-  (if sticky-point
-      (begin
-        (set! x (s2f x))
-        (set! y (s2f y))
-        (with mode (graphics-mode)
-          (cond ((== (cadr mode) 'move)
-                 (sketch-transform
-                  (group-translate (- x group-old-x)
-                                   (- y group-old-y))))
-                ((== (cadr mode) 'zoom)
-                 (sketch-set! group-first-go)
-                 (sketch-transform (group-zoom x y)))
-                ((== (cadr mode) 'rotate)
-                 (sketch-set! group-first-go)
-                 (sketch-transform (group-rotate x y)))))
-        (set! group-old-x x)
-        (set! group-old-y y))
-      (if multiselecting
-	  (begin
-            (graphical-object!
-             (append
-              (create-graphical-props 'default #f)
-              `((with color red
-                  (cline (point ,selecting-x0 ,selecting-y0)
-                         (point ,x ,selecting-y0)
-                         (point ,x ,y)
-                         (point ,selecting-x0 ,y)))))))
-	  (graphics-decorations-update))))
+  (cond (sticky-point
+         (set! x (s2f x))
+         (set! y (s2f y))
+         (with mode (graphics-mode)
+           (cond ((== (cadr mode) 'move)
+                  (sketch-transform
+                   (group-translate (- x group-old-x)
+                                    (- y group-old-y))))
+                 ((== (cadr mode) 'zoom)
+                  (sketch-set! group-first-go)
+                  (sketch-transform (group-zoom x y)))
+                 ((== (cadr mode) 'rotate)
+                  (sketch-set! group-first-go)
+                  (sketch-transform (group-rotate x y)))))
+         (set! group-old-x x)
+         (set! group-old-y y))
+        (multiselecting
+         (graphical-object!
+          (append
+           (create-graphical-props 'default #f)
+           `((with color red
+               (cline (point ,selecting-x0 ,selecting-y0)
+                      (point ,x ,selecting-y0)
+                      (point ,x ,y)
+                      (point ,selecting-x0 ,y)))))))
+        (else
+          (cond (current-path
+                 (set-message "Left click: operate; Right click: select/unselect" ""))
+                ((nnull? (sketch-get))
+                 (set-message "Left click: operate" ""))
+                (else
+                  (set-message "Move over object on which to operate" "")))
+          (graphics-decorations-update))))
 
 (tm-define (edit_move mode x y)
   (:require (and (== mode 'edit) (current-in? '(gr-group))))
@@ -370,7 +377,7 @@
   (:state graphics-state)
   (if (!= (logand (get-keyboard-modifiers) ShiftMask) 0)
       (if (null? (sketch-get))
-	  (middle-button)
+	  (graphics-delete)
 	  (remove-selected-objects))
       (unselect-all current-path current-obj)))
 

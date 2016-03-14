@@ -674,6 +674,13 @@ concater_rep::typeset (tree t, path ip) {
     typeset_flag (t, ip);
     break;
 
+  case ANIM_STATIC:
+  case ANIM_DYNAMIC:
+  case MORPH:
+  case ANIM_TIME:
+  case ANIM_PORTION:
+    typeset_executable (t, ip);
+    break;
   case ANIM_COMPOSE:
     typeset_anim_compose (t, ip);
     break;
@@ -740,6 +747,12 @@ concater_rep::typeset (tree t, path ip) {
     break;
   case CSPLINE:
     typeset_cspline (t, ip);
+    break;
+  case BEZIER:
+  case CBEZIER:
+  case SMOOTH:
+  case CSMOOTH:
+    typeset_bezier (t, ip);
     break;
   case FILL:
     typeset_fill (t, ip);
