@@ -1,4 +1,4 @@
-<TeXmacs|1.99.2>
+<TeXmacs|1.99.4>
 
 <style|<tuple|source|std>>
 
@@ -403,10 +403,14 @@
     </src-comment>
   </active*>
 
-  <assign|document-block|<\xmacro|switch-args>
+  <assign|deprecated-document-block|<\xmacro|switch-args>
     <surround||<right-flush>|<\quasi>
       <unquote*|<quote-arg|switch-args>>
     </quasi>>
+  </xmacro>>
+
+  <assign|document-block|<\xmacro|switch-args>
+    <surround||<right-flush>|<map-args|identity|document|switch-args>>
   </xmacro>>
 
   <assign|tiny-block|<xmacro|switch-args|<map-args|identity|concat|switch-args>>>

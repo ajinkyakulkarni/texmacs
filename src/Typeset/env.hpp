@@ -22,6 +22,7 @@
 #include "url.hpp"
 #include "frame.hpp"
 #include "link.hpp"
+#include "player.hpp"
 
 #define DECORATION (-1)
 
@@ -386,6 +387,7 @@ public:
   tree   expand (tree t, bool search_accessible= false);
   bool   depends (tree t, string s, int level);
   tree   rewrite (tree t);
+  path   get_animation_ip (path ip);
   tree   animate (tree t);
   tree   checkout_animation (tree t);
   tree   commit_animation (tree t);
@@ -535,5 +537,8 @@ tree get_graphical_value (tree var);
 bool graphics_needs_update ();
 void graphics_require_update (tree var);
 void graphics_notify_update (tree var);
+
+void players_set_elapsed (tree t, double el);
+void players_set_speed (tree t, double sp);
 
 #endif // defined ENV_H

@@ -15,6 +15,9 @@
 #include "printer.hpp"
 #include "file.hpp"
 #include "merge_sort.hpp"
+#include "player.hpp"
+
+extern tree the_et;
 
 /******************************************************************************
 * Default settings for virtual routines
@@ -505,10 +508,12 @@ box_rep::get_leaf_offset (string search) {
 int nr_painted= 0;
 
 void
-clear_pattern_rectangles (renderer ren, rectangles l) {
+clear_pattern_rectangles (renderer ren, rectangle m, rectangles l) {
   while (!is_nil (l)) {
     rectangle r (l->item);
-    ren->clear_pattern (r->x1- ren->ox, r->y1- ren->oy,
+    ren->clear_pattern (m->x1- ren->ox, m->y1- ren->oy,
+			m->x2- ren->ox, m->y2- ren->oy,
+                        r->x1- ren->ox, r->y1- ren->oy,
 			r->x2- ren->ox, r->y2- ren->oy);
     l= l->next;
   }
@@ -564,6 +569,7 @@ box_rep::redraw (renderer ren, path p, rectangles& l) {
     else {
       l= rectangle (x3+ ren->ox, y3+ ren->oy, x4+ ren->ox, y4+ ren->oy);
       display (ren);
+      if (!ren->is_screen) display_links (ren);
       if (nr_painted < 15) ren->apply_shadow (x1, y1, x2, y2);
       nr_painted++;
     }
@@ -708,87 +714,58 @@ as_tree (gr_selections sels) {
 * Animations
 ******************************************************************************/
 
-int
-box_rep::anim_length () {
-  int i, n= subnr (), len=0;
+player box_rep::anim_player () { return player (); }
+
+double
+box_rep::anim_delay () {
+  int i, n= subnr ();
+  double r= 0.0;
   for (i=0; i<n; i++) {
-    int slen= subbox (i)->anim_length ();
-    if (slen == -1) return -1;
-    if (slen > len) len= slen;
+    double sr= subbox (i)->anim_delay ();
+    r= max (r, sr);
   }
-  return len;
+  return r;
 }
 
-bool
-box_rep::anim_started () {
+double
+box_rep::anim_duration () {
   int i, n= subnr ();
-  for (i=0; i<n; i++)
-    if (!subbox (i)->anim_started ()) return false;
-  return true;
-}
-
-bool
-box_rep::anim_finished () {
-  int i, n= subnr ();
-  for (i=0; i<n; i++)
-    if (!subbox (i)->anim_finished ()) return false;
-  return true;
-}
-
-void
-box_rep::anim_start_at (time_t at) {
-  int i, n= subnr ();
-  for (i=0; i<n; i++)
-    subbox (i)->anim_start_at (at);
-}
-
-void
-box_rep::anim_finish_now () {
-  int i, n= subnr ();
-  for (i=0; i<n; i++)
-    subbox (i)->anim_finish_now ();
-}
-
-time_t
-box_rep::anim_next_update () {
-  FAILED ("invalid situation");
-  return texmacs_time ();
-}
-
-void
-box_rep::anim_check_invalid (bool& flag, time_t& at, rectangles& rs) {
-  time_t now= texmacs_time ();
-  time_t finish_at= anim_next_update ();
-  if (finish_at - now < 0) finish_at= now;
-  if (flag && at - now < 0) at= now;
-  if (!flag || finish_at - (at - 3) < 0) {
-    flag= true;
-    at  = finish_at;
-    rs  = rectangle (x1, y1, x2, y2);
+  double r= 0.0;
+  for (i=0; i<n; i++) {
+    double sr= subbox (i)->anim_duration ();
+    r= max (r, sr);
   }
-  else if (finish_at - (at + 3) <= 0) {
-    rs << rectangle (x1, y1, x2, y2);
-    if (finish_at - at < 0)
-      at= finish_at;
-  }
+  return r;
 }
 
 void
-box_rep::anim_get_invalid (bool& flag, time_t& at, rectangles& rs) {
+box_rep::anim_position (double t) {
+  int i, n= subnr ();
+  for (i=0; i<n; i++)
+    subbox (i)->anim_position (t);
+}
+
+double
+box_rep::anim_next () {
+  double r= 1.0e12;
   int i, n= subnr ();
   for (i=0; i<n; i++) {
-    bool   flag2= false;
-    time_t at2= at;
-    rectangles rs2;
-    subbox (i)->anim_get_invalid (flag2, at2, rs2);
-    if (flag2) {
-      rs2= translate (rs2, sx (i), sy (i));
-      if (at2 - (at-3) < 0) rs= rs2;
-      else rs << rs2;
-      flag= true;
-      if (at2 - at < 0) at= at2;
-    }
+    double sr= subbox (i)->anim_next ();
+    r= min (r, sr);
   }
+  return r;
+}
+
+rectangles
+box_rep::anim_invalid () {
+  rectangles rs;
+  int i, n= subnr ();
+  for (i=0; i<n; i++) {
+    rectangles rs2= subbox (i)->anim_invalid ();
+    rs2= translate (rs2, sx (i), sy (i));
+    rs << rs2;
+  }
+  return rs;
 }
 
 /******************************************************************************
@@ -809,6 +786,31 @@ box_rep::loci (SI x, SI y, SI delta, list<string>& ids, rectangles& rs) {
 }
 
 void
+box_rep::display_links (renderer ren) {
+  if (!is_nil (ip) && ip->item >= 0) {
+    path p= reverse (ip);
+    // FIXME: we might also look for links in the parents
+    // FIXME: we might want to sort out overlapping and adjacent links
+    if (has_subtree (the_et, p)) {
+      tree t= subtree (the_et, p);
+      list<string> ids= get_ids (t);
+      for (int i=0; i<N(ids); i++) {
+        list<tree> lns= get_links (compound ("id", ids[i]));
+        for (int j=0; j<N(lns); j++)
+          if (is_compound (lns[j], "link", 4) &&
+              lns[j][0] == "hyperlink" &&
+              is_compound (lns[j][3], "url", 1) &&
+              is_atomic (lns[j][3][0])) {
+            string dest= lns[j][3][0]->label;
+            ren->href (dest, x1, y1, x2, y2);
+            //cout << "Found link to " << dest << "\n";
+         }
+      }
+    }
+  }
+}
+
+void
 box_rep::position_at (SI x, SI y, rectangles& change_log) {
   int i, n= subnr ();
   x += x0; y += y0;
@@ -818,6 +820,17 @@ box_rep::position_at (SI x, SI y, rectangles& change_log) {
 void
 box_rep::collect_page_numbers (hashmap<string,tree>& h, tree page) {
   (void) h; (void) page;
+}
+
+void
+box_rep::collect_page_colors (array<brush>& bs, array<rectangle>& rs) {
+  int i, n= subnr ();
+  for (i=0; i<n; i++) {
+    array<rectangle> rs2;
+    subbox (i)->collect_page_colors (bs, rs2);
+    for (int j=0; j<N(rs2); j++)
+      rs << translate (rs2[j], sx (i), sy (i));
+  }
 }
 
 path

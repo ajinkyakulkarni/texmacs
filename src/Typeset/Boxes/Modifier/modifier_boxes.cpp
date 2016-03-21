@@ -159,13 +159,12 @@ modifier_box_rep::graphical_select (SI x1, SI y1, SI x2, SI y2) {
 * Animations
 ******************************************************************************/
 
-int modifier_box_rep::anim_length () { return b->anim_length (); }
-bool modifier_box_rep::anim_started () { return b->anim_started (); }
-bool modifier_box_rep::anim_finished () { return b->anim_finished (); }
-void modifier_box_rep::anim_finish_now () { b->anim_finish_now (); }
-void modifier_box_rep::anim_start_at (time_t at) { b->anim_start_at (at); }
-void modifier_box_rep::anim_get_invalid (bool& f, time_t& at, rectangles& rs) {
-  b->anim_get_invalid (f, at, rs); }
+player modifier_box_rep::anim_player () { return b->anim_player (); }
+double modifier_box_rep::anim_delay () { return b->anim_delay (); }
+double modifier_box_rep::anim_duration () { return b->anim_duration (); }
+void   modifier_box_rep::anim_position (double t) { b->anim_position (t); }
+double modifier_box_rep::anim_next () { return b->anim_next (); }
+rectangles modifier_box_rep::anim_invalid () { return b->anim_invalid (); }
 
 /******************************************************************************
 * Symbol boxes

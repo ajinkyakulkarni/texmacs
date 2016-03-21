@@ -32,6 +32,8 @@
 #define SHORTER_BOX   6
 #define BIG_OP_BOX    7
 
+class player;
+
 /******************************************************************************
 * The cursor class
 ******************************************************************************/
@@ -138,13 +140,15 @@ public:
   virtual void      display (renderer ren) = 0;
   virtual void      clear_incomplete (rectangles& rs, SI pixel,
 				      int i, int i1, int i2);
-  virtual int       subnr ();
-  virtual box       subbox (int i);
-  virtual tree      action (tree t, SI x, SI y, SI delta);
-  virtual void      loci (SI x, SI y, SI d, list<string>& ids, rectangles& rs);
-  virtual void      position_at (SI x, SI y, rectangles& change_log);
-  virtual void      collect_page_numbers (hashmap<string,tree>& h, tree page);
-  virtual path      find_tag (string name);
+  virtual int  subnr ();
+  virtual box  subbox (int i);
+  virtual tree action (tree t, SI x, SI y, SI delta);
+  virtual void loci (SI x, SI y, SI d, list<string>& ids, rectangles& rs);
+  virtual void display_links (renderer ren);
+  virtual void position_at (SI x, SI y, rectangles& change_log);
+  virtual void collect_page_numbers (hashmap<string,tree>& h, tree page);
+  virtual void collect_page_colors (array<brush>& bs, array<rectangle>& rs);
+  virtual path find_tag (string name);
 
   virtual int  reindex (int i, int item, int n);
   virtual void redraw (renderer ren, path p, rectangles& l);
@@ -241,14 +245,12 @@ public:
 
   /******************************** animations *******************************/
 
-  virtual int    anim_length ();
-  virtual bool   anim_started ();
-  virtual bool   anim_finished ();
-  virtual void   anim_start_at (time_t at);
-  virtual void   anim_finish_now ();
-  virtual time_t anim_next_update ();
-          void   anim_check_invalid (bool& flag, time_t& at, rectangles& rs);
-  virtual void   anim_get_invalid (bool& flag, time_t& at, rectangles& rs);
+  virtual player     anim_player ();
+  virtual double     anim_delay ();
+  virtual double     anim_duration ();
+  virtual void       anim_position (double delay);
+  virtual double     anim_next ();
+  virtual rectangles anim_invalid ();
 
   /********************************* obsolete ********************************/
 

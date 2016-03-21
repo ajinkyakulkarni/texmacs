@@ -15,6 +15,7 @@
 #include "array.hpp"
 #include "font.hpp"
 #include "command.hpp"
+#include "player.hpp"
 
 class frame;
 
@@ -152,7 +153,7 @@ box clip_box (path ip, box b, SI x1, SI y1, SI x2, SI y2);
 box clip_box (path ip, box b, SI x1, SI y1, SI x2, SI y2,
 	      tree xt, tree yt, SI scx, SI scy);
 box vcorrect_box (path ip, box b, SI top_cor, SI bot_cor);
-box page_box (path ip, tree page, int page_nr, SI w, SI h,
+box page_box (path ip, tree page, int page_nr, brush bgc, SI w, SI h,
 	      array<box> bs  , array<SI> bs_x  , array<SI> bs_y,
 	      array<box> decs, array<SI> decs_x, array<SI> decs_y);
 box locus_box (path ip, box b, list<string> ids, SI pixel);
@@ -161,12 +162,15 @@ box macro_box (path ip, box b, font big_fn= font (), int btype= STD_BOX);
 box tag_box (path ip, path tip, box b, tree keys);
 box note_box (path ip, box b, box note, SI nx, SI ny);
 
-box anim_compose_box (path ip, array<box> b);
-box anim_repeat_box (path ip, box b);
-box anim_constant_box (path ip, box b, int l);
-box anim_translate_box (path ip, box b, int len, SI sx, SI sy, SI ex, SI ey);
-box anim_progressive_box (path ip, box b, int len, rectangle r1, rectangle r2);
-box sound_box (path ip, url u, SI h);
-box video_box (path ip, url u, SI w, SI h, int a, int msecs, bool rep, int px);
+box anim_compose_box (path ip, array<box> b, player pl);
+box anim_repeat_box (path ip, box b, player pl);
+box anim_constant_box (path ip, box b, player pl, int l);
+box anim_translate_box (path ip, box b, player pl,
+                        int len, SI sx, SI sy, SI ex, SI ey);
+box anim_progressive_box (path ip, box b, player pl,
+                          int len, rectangle r1, rectangle r2);
+box sound_box (path ip, player pl, url u, SI h);
+box video_box (path ip, player pl, url u,
+               SI w, SI h, int a, int msecs, bool rep, int px);
 
 #endif // defined CONSTRUCT_H
